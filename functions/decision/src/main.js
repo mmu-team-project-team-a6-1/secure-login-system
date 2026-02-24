@@ -34,7 +34,8 @@ export default async ({ req, res, log }) => {
       return res.json({ message: `Already ${doc.status}` });
     }
 
-    if (Date.now() > doc.expiresAt) {
+    const now = Date.now();
+    if (now > doc.expiresAt) {
       await databases.updateDocument(
         process.env.DB_ID,
         process.env.COLLECTION_ID,
@@ -50,7 +51,7 @@ export default async ({ req, res, log }) => {
       doc.$id,
       {
         status: decision,
-        approvedAt: decision === "APPROVED" ? Date.now() : null,
+        approvedAt: decision === "APPROVED" ? now : null,
         deviceInfo: req.headers?.["user-agent"] || "unknown"
       }
     );
