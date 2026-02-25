@@ -1,78 +1,65 @@
-import { Client, Databases, ID, Query } from "node-appwrite";
+import { Client, Databases } from "node-appwrite";
 import crypto from "crypto";
 
-export default async ({ req, res, log }) => {
+export default async ({ req, res, log, error }) => {
   try {
-    const body = req.bodyJson ?? {};
-    const username = body.username;
+    const endpoint = process.env.APPWRITE_ENDPOINT;
+    const projectId = process.env.APPWRITE_PROJECT_ID;
+    const apiKey = process.env.APPWRITE_API_KEY;
+    const databaseId = process.env.DATABASE_ID;
+    const tableId = process.env.TABLE_ID;
 
-    if (!username || typeof username !== "string") {
-      return res.json({ error: "username is required" }, 400);
+    if (!endpoint || !projectId || !apiKey || !databaseId || !tableId) {
+      return res.json({ ok: false, message: "Missing env vars" }, 500);
+    }
+
+    let body = {};
+    try {
+      body = req.body ? JSON.parse(req.body) : {};
+    } catch {}
+
+    const username = (body.username || "").trim();
+    if (!username) {
+      return res.json({ ok: false, message: "Missing username" }, 400);
     }
 
     const client = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT)
-      .setProject(process.env.APPWRITE_PROJECT_ID)
-      .setKey(process.env.APPWRITE_API_KEY);
+      .setEndpoint(endpoint)
+      .setProject(projectId)
+      .setKey(apiKey);
 
-    const databases = new Databases(client);
+    const db = new Databases(client);
 
-    const now = Date.now();
-    const ttlMs =
-      Number.parseInt(process.env.LOGIN_REQUEST_TTL_MS ?? "", 10) || 120000;
-    const expiresAt = now + ttlMs;
-    const token = crypto.randomBytes(24).toString("hex");
+    const token = crypto.randomBytes(24).toString("hex"); // optional but useful
+    const createdAt = new Date().toISOString();
+    const expiresAtIso = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 mins
 
-    // Optionally expire any existing PENDING requests for this username
-    try {
-      const existing = await databases.listDocuments(
-        process.env.DB_ID,
-        process.env.COLLECTION_ID,
-        [Query.equal("username", username), Query.equal("status", "PENDING")]
-      );
+    // ✅ Create the document and capture the created doc (so we get $id)
+    const created = await db.createDocument(databaseId, tableId, "unique()", {
+      username,
+      token,
+      status: "PENDING",
+      createdAt,
+      expiresAt: expiresAtIso, // store ISO string
+    });
 
-      await Promise.all(
-        existing.documents.map((doc) =>
-          databases.updateDocument(
-            process.env.DB_ID,
-            process.env.COLLECTION_ID,
-            doc.$id,
-            { status: "EXPIRED" }
-          )
-        )
-      );
-    } catch (cleanupErr) {
-      // Log but do not fail the whole request for cleanup issues
-      log?.(
-        `cleanup_error: ${
-          cleanupErr?.message ? String(cleanupErr.message) : String(cleanupErr)
-        }`
-      );
-    }
+    const requestId = created.$id;
 
-    const doc = await databases.createDocument(
-      process.env.DB_ID,
-      process.env.COLLECTION_ID,
-      ID.unique(),
-      {
-        username,
-        token,
-        status: "PENDING",
-        createdAt: now,
-        expiresAt
-      }
-    );
-
-    const approveUrl = `${process.env.FRONTEND_BASE_URL}/approve?token=${token}`;
+    // Optional: build a link your frontend can use for QR
+    // (Your frontend can also build this itself)
+    const approvePath = `/approve?requestId=${requestId}`;
 
     return res.json({
-      requestId: doc.$id,
-      approveUrl,
-      qrUrl: approveUrl,
-      expiresInSeconds: Math.round(ttlMs / 1000)
+      ok: true,
+      username,
+      requestId,
+      token, // optional
+      status: "PENDING",
+      expiresAt: expiresAtIso,
+      approvePath,
     });
-  } catch (err) {
-    log(err?.message || String(err));
-    return res.json({ error: "server error" }, 500);
+  } catch (e) {
+    error(e);
+    return res.json({ ok: false, message: e.message }, 500);
   }
 };
