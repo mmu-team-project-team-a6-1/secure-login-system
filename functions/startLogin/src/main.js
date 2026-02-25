@@ -1,7 +1,7 @@
 import { Client, Databases } from "node-appwrite";
 import crypto from "crypto";
 
-export default async ({ req, res, log, error }) => {
+export default async ({ req, res, error }) => {
   try {
     const endpoint = process.env.APPWRITE_ENDPOINT;
     const projectId = process.env.APPWRITE_PROJECT_ID;
@@ -13,12 +13,19 @@ export default async ({ req, res, log, error }) => {
       return res.json({ ok: false, message: "Missing env vars" }, 500);
     }
 
-    let body = {};
-    try {
-      body = req.body ? JSON.parse(req.body) : {};
-    } catch {}
+    // ✅ Accept body from either req.bodyJson (preferred) or req.body (string)
+    let body = req.bodyJson ?? {};
+    if (!body || typeof body !== "object") body = {};
 
-    const username = (body.username || "").trim();
+    if (!req.bodyJson && req.body) {
+      try {
+        body = JSON.parse(req.body);
+      } catch {
+        // ignore
+      }
+    }
+
+    const username = String(body.username || "").trim();
     if (!username) {
       return res.json({ ok: false, message: "Missing username" }, 400);
     }
@@ -30,36 +37,31 @@ export default async ({ req, res, log, error }) => {
 
     const db = new Databases(client);
 
-    const token = crypto.randomBytes(24).toString("hex"); // optional but useful
+    const token = crypto.randomBytes(24).toString("hex"); // 48 chars
     const createdAt = new Date().toISOString();
-    const expiresAtIso = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 mins
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 mins
 
-    // ✅ Create the document and capture the created doc (so we get $id)
     const created = await db.createDocument(databaseId, tableId, "unique()", {
       username,
       token,
       status: "PENDING",
       createdAt,
-      expiresAt: expiresAtIso, // store ISO string
+      expiresAt, // ✅ matches your column name
     });
 
     const requestId = created.$id;
-
-    // Optional: build a link your frontend can use for QR
-    // (Your frontend can also build this itself)
-    const approvePath = `/approve?requestId=${requestId}`;
 
     return res.json({
       ok: true,
       username,
       requestId,
-      token, // optional
+      token,
       status: "PENDING",
-      expiresAt: expiresAtIso,
-      approvePath,
+      expiresAt,
+      approvePath: `/approve?requestId=${requestId}`,
     });
   } catch (e) {
     error(e);
-    return res.json({ ok: false, message: e.message }, 500);
+    return res.json({ ok: false, message: e?.message || "server error" }, 500);
   }
 };
