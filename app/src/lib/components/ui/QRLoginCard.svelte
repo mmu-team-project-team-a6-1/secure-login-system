@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from "svelte";
 	import QRCode from "qrcode";
 	import * as Card from "$lib/components/ui/card/index.js";
+	import { Button } from "$lib/components/ui/button/index.js";
 	import { generateToken, nowEpochSeconds } from "$lib/utils/totp";
 	import { RefreshCw, Loader2, ShieldCheck, ShieldX } from "@lucide/svelte";
 
@@ -140,13 +141,10 @@
 			{:else if status === "expired"}
 				<div class="flex flex-col items-center gap-2">
 					<span class="text-neutral-400 text-xs text-center">Session expired</span>
-					<button
-						onclick={initSession}
-						class="flex items-center gap-1.5 text-xs font-medium text-[#4F83C2] hover:text-[#4373AB] transition-colors"
-					>
+					<Button onclick={initSession} variant="default" size="sm" class="gap-1.5">
 						<RefreshCw class="size-3.5" />
 						Refresh
-					</button>
+					</Button>
 				</div>
 			{:else if status === "scanned"}
 				<div class="flex flex-col items-center gap-3">
@@ -167,13 +165,10 @@
 				<div class="flex flex-col items-center gap-2">
 					<ShieldX class="size-10 text-red-400" />
 					<span class="text-red-500 text-sm font-medium">Login denied</span>
-					<button
-						onclick={() => window.location.reload()}
-						class="flex items-center gap-1.5 text-xs font-medium text-[#4F83C2] hover:text-[#4373AB] transition-colors"
-					>
+					<Button onclick={() => window.location.reload()} variant="default" size="sm" class="gap-1.5">
 						<RefreshCw class="size-3.5" />
 						Try again
-					</button>
+					</Button>
 				</div>
 			{:else}
 				{#each [0, 1] as slot}

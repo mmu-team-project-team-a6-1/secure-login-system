@@ -3,6 +3,7 @@
 	import DashboardCard from "$lib/components/ui/DashboardCard.svelte";
 	import DashboardBottomNav from "$lib/components/ui/DashboardBottomNav.svelte";
 	import QRScanner from "$lib/components/ui/QRScanner.svelte";
+	import { Button } from "$lib/components/ui/button/index.js";
 	import { QrCode, LogOut, Monitor, Smartphone, Globe, ShieldCheck } from "@lucide/svelte";
 
 	let { data } = $props();
@@ -59,13 +60,15 @@
 				</h1>
 				<p class="text-sm text-neutral-500">Welcome back</p>
 			</div>
-			<button
+			<Button
 				onclick={logout}
-				class="p-2.5 rounded-full glass-panel border border-[var(--glass-border)] active:scale-95 transition-transform duration-150"
+				variant="default"
+				size="icon"
+				class="rounded-full touch-press"
 				aria-label="Log out"
 			>
 				<LogOut class="size-5 text-neutral-600" />
-			</button>
+			</Button>
 		</div>
 	</header>
 
@@ -73,21 +76,19 @@
 	<main class="max-w-2xl mx-auto px-5 py-6 space-y-4" class:pb-24={isMobile}>
 		<!-- QR Scanner CTA (mobile only; hidden when bottom nav is shown so Scan is in nav) -->
 		{#if isMobile}
-			<button
+			<Button
 				onclick={() => (scannerOpen = true)}
-				class="w-full bg-[#111111] text-white rounded-2xl p-5 flex items-center gap-4
-					   active:scale-[0.98] transition-transform duration-150
-					   shadow-[var(--glass-shadow)] backdrop-blur-xl border border-white/10"
-				style="transition: transform 0.2s cubic-bezier(0.2,0.9,0.3,1); -webkit-backdrop-filter: blur(24px);"
+				variant="default"
+				class="w-full h-auto rounded-2xl p-5 flex items-center gap-4 touch-press"
 			>
-				<div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/20 border border-white/20 flex items-center justify-center">
-					<QrCode class="size-6 text-white" />
+				<div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-black/10 dark:bg-white/20 border border-[var(--glass-border)] flex items-center justify-center">
+					<QrCode class="size-6 text-foreground" />
 				</div>
-				<div class="text-left">
+				<div class="text-left flex-1 min-w-0">
 					<p class="font-semibold text-base">Scan QR Code</p>
-					<p class="text-sm text-neutral-400">Authorize login on another device</p>
+					<p class="text-sm text-muted-foreground">Authorize login on another device</p>
 				</div>
-			</button>
+			</Button>
 		{/if}
 
 		<!-- Active Sessions -->

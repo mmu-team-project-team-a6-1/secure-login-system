@@ -26,7 +26,7 @@
 >
 	<button
 		type="button"
-		class="flex flex-col items-center gap-1 min-w-[4rem] py-1 rounded-xl transition-colors {active === 'home'
+		class="flex flex-col items-center gap-1 min-w-[4rem] py-2.5 px-3 rounded-xl transition-all btn-glass {active === 'home'
 			? 'text-neutral-900 font-medium'
 			: 'text-neutral-500'}"
 		aria-current={active === "home" ? "page" : undefined}
@@ -36,7 +36,7 @@
 	</button>
 	<button
 		type="button"
-		class="flex flex-col items-center gap-1 min-w-[4rem] py-1 rounded-xl transition-colors {active === 'scan'
+		class="flex flex-col items-center gap-1 min-w-[4rem] py-2.5 px-3 rounded-xl transition-all btn-glass {active === 'scan'
 			? 'text-neutral-900 font-medium'
 			: 'text-neutral-500'}"
 		onclick={onScan}
@@ -47,7 +47,7 @@
 	</button>
 	<button
 		type="button"
-		class="flex flex-col items-center gap-1 min-w-[4rem] py-1 rounded-xl transition-colors {active === 'account'
+		class="flex flex-col items-center gap-1 min-w-[4rem] py-2.5 px-3 rounded-xl transition-all btn-glass {active === 'account'
 			? 'text-neutral-900 font-medium'
 			: 'text-neutral-500'}"
 		onclick={scrollToAccount}

@@ -136,7 +136,7 @@
 				<div class="space-y-4">
 					<Button
 						type="button"
-						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-lg gap-2 transition-colors duration-150"
+						class="w-full h-11 rounded-lg gap-2"
 						onclick={handlePasskeyLogin}
 						disabled={loading}
 					>
@@ -161,7 +161,7 @@
 					</div>
 					<Button
 						type="submit"
-						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-lg gap-2 transition-colors duration-150"
+						class="w-full h-11 rounded-lg gap-2"
 						disabled={loading}
 					>
 						<Fingerprint class="size-5" />
