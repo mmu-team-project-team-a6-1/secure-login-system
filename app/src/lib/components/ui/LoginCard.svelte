@@ -122,7 +122,7 @@
 <Card.Root class="w-full max-w-sm rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl p-8">
 	<Card.Header class="p-0 pb-1">
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">Welcome</Card.Title>
-		<Card.Description class="text-sm text-neutral-600">
+		<Card.Description class="text-sm text-neutral-700">
 			{mode === "login" ? "Sign in with your passkey" : "Create an account with a passkey"}
 		</Card.Description>
 	</Card.Header>

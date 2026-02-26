@@ -108,7 +108,7 @@
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">
 			Log in with mobile app
 		</Card.Title>
-		<Card.Description class="text-sm text-neutral-600">
+		<Card.Description class="text-sm text-neutral-700">
 			{#if status === "scanned"}
 				Confirm the login on your mobile device
 			{:else if status === "authenticated"}

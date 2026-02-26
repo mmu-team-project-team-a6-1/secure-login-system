@@ -8,15 +8,17 @@
 		viewBox="0 0 1200 800"
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
+		preserveAspectRatio="xMidYMid slice"
+		style="overflow: hidden;"
 	>
 		<defs>
 			<linearGradient id="wave-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
-				<stop offset="0%" stop-color="#B784C7" stop-opacity="0.4" />
-				<stop offset="100%" stop-color="#9B6BA8" stop-opacity="0.25" />
+				<stop offset="0%" stop-color="#5B9BF5" stop-opacity="0.4" />
+				<stop offset="100%" stop-color="#3B82F6" stop-opacity="0.25" />
 			</linearGradient>
 			<linearGradient id="wave-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
-				<stop offset="0%" stop-color="#C99BD4" stop-opacity="0.3" />
-				<stop offset="100%" stop-color="#B784C7" stop-opacity="0.15" />
+				<stop offset="0%" stop-color="#93C5FD" stop-opacity="0.3" />
+				<stop offset="100%" stop-color="#60A5FA" stop-opacity="0.15" />
 			</linearGradient>
 			<filter id="wave-blur" x="-20%" y="-20%" width="140%" height="140%">
 				<feGaussianBlur in="SourceGraphic" stdDeviation="24" result="blur" />
@@ -33,10 +35,10 @@
 			fill="url(#wave-grad-1)"
 			class="login-wave login-wave-1"
 		/>
-		<!-- Wave 2 -->
+		<!-- Wave 2 (path kept within viewBox to avoid overflow on mobile) -->
 		<path
 			id="wave2"
-			d="M0 450 Q400 350 800 450 T1600 450 V800 H0 Z"
+			d="M0 450 Q400 350 800 450 T1200 450 V800 H0 Z"
 			fill="url(#wave-grad-2)"
 			class="login-wave login-wave-2"
 		/>
