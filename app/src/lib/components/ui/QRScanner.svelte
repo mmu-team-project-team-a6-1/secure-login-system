@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
+	import { BarcodeDetector } from "barcode-detector";
 	import { X, CheckCircle, AlertCircle, Loader2 } from "@lucide/svelte";
 
 	let { onclose }: { onclose: () => void } = $props();
@@ -17,12 +18,6 @@
 		requestAnimationFrame(() => {
 			visible = true;
 		});
-
-		if (!("BarcodeDetector" in window)) {
-			status = "error";
-			errorMsg = "QR scanning requires a modern mobile browser";
-			return;
-		}
 
 		try {
 			stream = await navigator.mediaDevices.getUserMedia({
