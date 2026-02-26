@@ -1,19 +1,17 @@
 <script lang="ts">
 	import * as Card from "$lib/components/ui/card/index.js";
+	import * as Tabs from "$lib/components/ui/tabs/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { Fingerprint } from "@lucide/svelte";
 
-	type Mode = "login" | "signup";
-
-	let mode = $state<Mode>("login");
+	let mode = $state("login");
 	let username = $state("");
 	let loading = $state(false);
 	let errorMsg = $state<string | null>(null);
 
-	function setMode(m: Mode) {
-		mode = m;
+	function onModeChange() {
 		errorMsg = null;
 	}
 
@@ -129,78 +127,49 @@
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="p-0">
-		{#if mode === "signup"}
-			<form onsubmit={handleSignup} class="space-y-4">
-				<div class="flex gap-3">
+		<Tabs.Root bind:value={mode} onValueChange={onModeChange} class="w-full">
+			<Tabs.List class="w-full grid grid-cols-2 h-10 rounded-lg bg-neutral-300/60">
+				<Tabs.Trigger value="login">Log in</Tabs.Trigger>
+				<Tabs.Trigger value="signup">Sign up</Tabs.Trigger>
+			</Tabs.List>
+			<Tabs.Content value="login" class="pt-4">
+				<div class="space-y-4">
 					<Button
-						variant="default"
-						class="flex-1 bg-[#4F83C2] hover:bg-[#4373AB] text-white h-10 rounded-md transition-colors duration-150"
-						onclick={() => setMode("login")}
 						type="button"
+						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
+						onclick={handlePasskeyLogin}
+						disabled={loading}
 					>
-						Log in
-					</Button>
-					<Button
-						variant="default"
-						class="flex-1 bg-[#111111] hover:bg-[#222222] text-white h-10 rounded-md transition-colors duration-150"
-						type="button"
-						disabled
-					>
-						Sign up
+						<Fingerprint class="size-5" />
+						{loading ? "Signing in..." : "Log in with passkey"}
 					</Button>
 				</div>
-				<div class="space-y-2">
-					<Label for="username" class="text-neutral-800">Username</Label>
-					<Input
-						id="username"
-						type="text"
-						placeholder="Choose a username"
-						bind:value={username}
-						required
-						autocomplete="username"
-						class="bg-white border-neutral-300"
-					/>
-				</div>
-				<Button
-					type="submit"
-					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
-					disabled={loading}
-				>
-					<Fingerprint class="size-5" />
-					{loading ? "Creating passkey..." : "Create account with passkey"}
-				</Button>
-			</form>
-		{:else}
-			<div class="space-y-4">
-				<div class="flex gap-3">
+			</Tabs.Content>
+			<Tabs.Content value="signup" class="pt-4">
+				<form onsubmit={handleSignup} class="space-y-4">
+					<div class="space-y-2">
+						<Label for="username" class="text-neutral-800">Username</Label>
+						<Input
+							id="username"
+							type="text"
+							placeholder="Choose a username"
+							bind:value={username}
+							required
+							autocomplete="username"
+							class="bg-white border-neutral-300"
+						/>
+					</div>
 					<Button
-						variant="default"
-						class="flex-1 bg-[#4F83C2] hover:bg-[#4373AB] text-white h-10 rounded-md transition-colors duration-150"
-						type="button"
-						disabled
+						type="submit"
+						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
+						disabled={loading}
 					>
-						Log in
+						<Fingerprint class="size-5" />
+						{loading ? "Creating passkey..." : "Create account with passkey"}
 					</Button>
-					<Button
-						variant="default"
-						class="flex-1 bg-[#111111] hover:bg-[#222222] text-white h-10 rounded-md transition-colors duration-150"
-						onclick={() => setMode("signup")}
-						type="button"
-					>
-						Sign up
-					</Button>
-				</div>
-				<Button
-					type="button"
-					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
-					onclick={handlePasskeyLogin}
-					disabled={loading}
-				>
-					<Fingerprint class="size-5" />
-					{loading ? "Signing in..." : "Log in with passkey"}
-				</Button>
-			</div>
-		{/if}
+				</form>
+			</Tabs.Content>
+		</Tabs.Root>
 		{#if errorMsg}
 			<p class="text-sm text-red-600 mt-3">{errorMsg}</p>
 		{/if}
