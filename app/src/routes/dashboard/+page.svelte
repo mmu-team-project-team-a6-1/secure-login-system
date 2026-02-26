@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import DashboardCard from "$lib/components/ui/DashboardCard.svelte";
+	import DashboardBottomNav from "$lib/components/ui/DashboardBottomNav.svelte";
 	import QRScanner from "$lib/components/ui/QRScanner.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
 	import { QrCode, LogOut, Monitor, Smartphone, Globe, ShieldCheck } from "@lucide/svelte";
 
 	let { data } = $props();
 	let scannerOpen = $state(false);
 	let isMobile = $state(false);
 	let mounted = $state(false);
+	let navActive = $state<"home" | "scan" | "account">("home");
 
 	onMount(() => {
 		isMobile = window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent);
@@ -46,10 +47,10 @@
 <div class="min-h-screen bg-[#F2F2F7] transition-colors duration-500">
 	<!-- Header -->
 	<header
-		class="sticky top-0 z-30 bg-[#F2F2F7]/80 backdrop-blur-xl border-b border-neutral-200/50"
+		class="sticky top-0 z-30 bg-[var(--glass-bg)] backdrop-blur-xl border-b border-[var(--glass-border)]"
 		class:opacity-0={!mounted}
 		class:translate-y-[-8px]={!mounted}
-		style="transition: opacity 0.5s cubic-bezier(0.2,0.9,0.3,1), transform 0.5s cubic-bezier(0.2,0.9,0.3,1);"
+		style="-webkit-backdrop-filter: blur(24px); transition: opacity 0.5s cubic-bezier(0.2,0.9,0.3,1), transform 0.5s cubic-bezier(0.2,0.9,0.3,1);"
 	>
 		<div class="max-w-2xl mx-auto px-5 py-4 flex items-center justify-between">
 			<div>
@@ -69,17 +70,17 @@
 	</header>
 
 	<!-- Content -->
-	<main class="max-w-2xl mx-auto px-5 py-6 space-y-4">
-		<!-- QR Scanner CTA (mobile only) -->
+	<main class="max-w-2xl mx-auto px-5 py-6 space-y-4" class:pb-24={isMobile}>
+		<!-- QR Scanner CTA (mobile only; hidden when bottom nav is shown so Scan is in nav) -->
 		{#if isMobile}
 			<button
 				onclick={() => (scannerOpen = true)}
 				class="w-full bg-[#111111] text-white rounded-2xl p-5 flex items-center gap-4
 					   active:scale-[0.98] transition-transform duration-150
-					   shadow-[var(--glass-shadow)]"
-				style="transition: transform 0.2s cubic-bezier(0.2,0.9,0.3,1);"
+					   shadow-[var(--glass-shadow)] backdrop-blur-xl border border-white/10"
+				style="transition: transform 0.2s cubic-bezier(0.2,0.9,0.3,1); -webkit-backdrop-filter: blur(24px);"
 			>
-				<div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+				<div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/20 border border-white/20 flex items-center justify-center">
 					<QrCode class="size-6 text-white" />
 				</div>
 				<div class="text-left">
@@ -144,7 +145,8 @@
 		</DashboardCard>
 
 		<!-- Account info -->
-		<DashboardCard title="Account">
+		<div id="account-card">
+			<DashboardCard title="Account">
 			<div class="space-y-2">
 				<div class="flex justify-between">
 					<span class="text-sm text-neutral-500">Username</span>
@@ -165,8 +167,16 @@
 					</span>
 				</div>
 			</div>
-		</DashboardCard>
+			</DashboardCard>
+		</div>
 	</main>
+	{#if isMobile}
+		<DashboardBottomNav
+			active={scannerOpen ? 'scan' : navActive}
+			onScan={() => (scannerOpen = true)}
+			onAccount={() => (navActive = 'account')}
+		/>
+	{/if}
 </div>
 
 {#if scannerOpen}

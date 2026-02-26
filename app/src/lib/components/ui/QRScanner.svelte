@@ -1,13 +1,16 @@
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
 	import { BarcodeDetector } from "barcode-detector";
-	import { X, CheckCircle, AlertCircle, AlertTriangle, Loader2, Monitor, MapPin, Globe, ShieldCheck, ChevronRight } from "@lucide/svelte";
+	import { X, AlertCircle, AlertTriangle, Loader2, Monitor, MapPin, Globe, ShieldCheck, ChevronRight } from "@lucide/svelte";
 
 	let { onclose }: { onclose: () => void } = $props();
 
 	let status = $state<"scanning" | "verifying" | "approving" | "approving-loading" | "success" | "error">("scanning");
 	let errorMsg = $state("");
 	let visible = $state(false);
+	let closing = $state(false);
+	let successCloseTimer: ReturnType<typeof setTimeout> | undefined;
+	let successSlideTimer: ReturnType<typeof setTimeout> | undefined;
 
 	interface DesktopInfo {
 		device: string;
@@ -186,7 +189,11 @@
 
 			if (res.ok) {
 				status = "success";
-				setTimeout(handleClose, 1500);
+				closing = false;
+				successCloseTimer = setTimeout(() => {
+					closing = true;
+					successSlideTimer = setTimeout(handleClose, 400);
+				}, 1400);
 			} else {
 				const data = await res.json();
 				status = "error";
@@ -223,6 +230,11 @@
 	}
 
 	function handleClose() {
+		if (successCloseTimer) clearTimeout(successCloseTimer);
+		if (successSlideTimer) clearTimeout(successSlideTimer);
+		successCloseTimer = undefined;
+		successSlideTimer = undefined;
+		closing = false;
 		visible = false;
 		stopCamera();
 		setTimeout(onclose, 350);
@@ -230,15 +242,40 @@
 </script>
 
 <style>
+	.approval-sheet {
+		transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+	}
+	.approval-sheet-closing {
+		transform: translateY(100vh);
+	}
+	.success-checkmark-path {
+		stroke-dasharray: 60;
+		stroke-dashoffset: 60;
+		animation: success-check-draw 0.5s ease-out 0.1s forwards;
+	}
+	@keyframes success-check-draw {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
 	.success-particles {
-		animation: success-particles-fade-in 0.5s ease-out;
+		animation: success-particles-fade-in 0.4s ease-out;
 	}
 	.success-particle {
-		animation: success-particle-float 6s ease-in-out infinite;
+		animation: success-particle-drift 4s ease-in-out infinite;
+	}
+	.success-particle-burst {
+		animation: success-particle-burst 1.2s ease-out forwards, success-particle-drift 4s ease-in-out 1s infinite;
+		opacity: 0;
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.success-particle {
+		.success-particle,
+		.success-particle-burst {
 			animation: none;
+			opacity: 0.6;
+		}
+		.approval-sheet-closing {
+			transition-duration: 0.2s;
 		}
 	}
 	@keyframes success-particles-fade-in {
@@ -249,15 +286,28 @@
 			opacity: 1;
 		}
 	}
-	@keyframes success-particle-float {
+	@keyframes success-particle-burst {
+		0% {
+			transform: translate(0, 0) scale(0.2);
+			opacity: 0;
+		}
+		50% {
+			opacity: 0.9;
+		}
+		100% {
+			transform: translate(0, -70px) scale(1);
+			opacity: 0.55;
+		}
+	}
+	@keyframes success-particle-drift {
 		0%,
 		100% {
 			transform: translate(0, 0) scale(1);
-			opacity: 0.4;
+			opacity: 0.5;
 		}
 		50% {
-			transform: translate(2px, -8px) scale(1.1);
-			opacity: 0.7;
+			transform: translate(4px, -12px) scale(1.15);
+			opacity: 0.85;
 		}
 	}
 </style>
@@ -265,9 +315,10 @@
 {#if status === "approving" || status === "approving-loading" || status === "success"}
 	<!-- Approval screen (full-screen, replaces camera) -->
 	<div
-		class="fixed inset-0 z-50 flex flex-col bg-black"
+		class="fixed inset-0 z-50 flex flex-col bg-black approval-sheet"
 		class:opacity-0={!visible}
 		class:opacity-100={visible}
+		class:approval-sheet-closing={closing}
 		style="transition: opacity 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);"
 	>
 		{#if status === "success"}
@@ -277,12 +328,12 @@
 				style="background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(0, 168, 142, 0.35) 0%, rgba(111, 207, 151, 0.2) 40%, transparent 70%);"
 				aria-hidden="true"
 			></div>
-			<!-- Soft green particles -->
+			<!-- Active green particles (shoot + drift) -->
 			<div class="success-particles absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-				{#each Array(28) as _, i}
+				{#each Array(48) as _, i}
 					<span
-						class="success-particle absolute rounded-full bg-emerald-400/40"
-						style="width: {4 + (i % 5)}px; height: {4 + (i % 5)}px; left: {(i * 13.7) % 100}%; top: {(i * 17 + 10) % 100}%; animation-delay: {- (i % 12) * 0.4}s;"
+						class="success-particle success-particle-burst absolute rounded-full bg-emerald-400/50"
+						style="width: {3 + (i % 6)}px; height: {3 + (i % 6)}px; left: {40 + (i * 7.3) % 20}%; top: {50 + (i * 5.1) % 20}%; animation-delay: {(i % 20) * 0.05}s;"
 					></span>
 				{/each}
 			</div>
@@ -298,7 +349,8 @@
 			{#if status !== "success"}
 				<button
 					onclick={denyLogin}
-					class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center active:scale-90 transition-transform duration-150"
+					class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 transition-transform duration-150"
+					style="-webkit-backdrop-filter: blur(24px);"
 					aria-label="Deny and close"
 				>
 					<X class="size-5 text-white" />
@@ -309,13 +361,15 @@
 		<div class="flex-1 flex flex-col items-center justify-center px-8 gap-6">
 			{#if status === "success"}
 				<div class="flex flex-col items-center gap-3">
-					<div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-						<CheckCircle class="size-8 text-green-400" />
+					<div class="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+						<svg class="success-checkmark w-10 h-10 text-green-400" viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+							<path class="success-checkmark-path" d="M14 27 l8 8 16 -20" />
+						</svg>
 					</div>
 					<p class="text-green-400 text-base font-medium">Login authorized!</p>
 				</div>
 			{:else}
-				<div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+				<div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center" style="-webkit-backdrop-filter: blur(24px);">
 					<ShieldCheck class="size-8 text-white" />
 				</div>
 
@@ -324,7 +378,7 @@
 				</p>
 
 				{#if desktopInfo}
-					<div class="w-full max-w-xs rounded-2xl bg-white/10 backdrop-blur-sm overflow-hidden">
+					<div class="w-full max-w-xs rounded-2xl bg-white/15 backdrop-blur-xl border border-white/20 overflow-hidden" style="-webkit-backdrop-filter: blur(24px);">
 						<div class="px-5 py-3.5 flex items-center gap-3 border-b border-white/10">
 							<Monitor class="size-4.5 text-white/60 flex-shrink-0" />
 							<div class="min-w-0">
@@ -351,7 +405,7 @@
 				</div>
 			{/if}
 
-			<div class="w-full max-w-xs rounded-xl bg-amber-500/15 border border-amber-500/30 px-4 py-3 flex gap-3">
+			<div class="w-full max-w-xs rounded-xl bg-amber-500/15 backdrop-blur-md border border-amber-500/30 px-4 py-3 flex gap-3" style="-webkit-backdrop-filter: blur(12px);">
 				<AlertTriangle class="size-5 text-amber-400 flex-shrink-0 mt-0.5" />
 				<p class="text-xs text-amber-200/90 leading-relaxed">
 					Only approve if you are logging in on a device directly in front of you.
@@ -366,7 +420,7 @@
 				class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-4 px-6 flex flex-col gap-3"
 			>
 			{#if status === "approving-loading"}
-				<div class="w-full h-14 rounded-full bg-white/10 flex items-center justify-center gap-2">
+				<div class="w-full h-14 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center gap-2" style="-webkit-backdrop-filter: blur(24px);">
 					<Loader2 class="size-5 text-white animate-spin" />
 					<span class="text-white/70 text-sm font-medium">Approving...</span>
 				</div>
@@ -374,8 +428,8 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={trackEl}
-					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden {approvalReady ? 'bg-white/15' : 'bg-white/5'}"
-					style="transition: background-color 0.3s;"
+					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden backdrop-blur-xl border border-white/20 {approvalReady ? 'bg-white/20' : 'bg-white/10'}"
+					style="transition: background-color 0.3s; -webkit-backdrop-filter: blur(24px);"
 				>
 					<span
 						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none {approvalReady ? 'text-white/50' : 'text-white/30'}"
@@ -410,8 +464,9 @@
 				<button
 					onclick={denyLogin}
 					disabled={status === "approving-loading"}
-					class="w-full py-3.5 rounded-2xl bg-white/10 text-white font-medium text-sm
+					class="w-full py-3.5 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/20 text-white font-medium text-sm
 						   active:scale-[0.98] transition-all duration-150 disabled:opacity-40"
+					style="-webkit-backdrop-filter: blur(24px);"
 				>
 					Deny
 				</button>
@@ -430,7 +485,8 @@
 			<h2 class="text-lg font-semibold text-white">Scan QR Code</h2>
 			<button
 				onclick={handleClose}
-				class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center active:scale-90 transition-transform duration-150"
+				class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 transition-transform duration-150"
+				style="-webkit-backdrop-filter: blur(24px);"
 				aria-label="Close scanner"
 			>
 				<X class="size-5 text-white" />
@@ -450,16 +506,16 @@
 				<div class="absolute inset-0 bg-black/40"></div>
 				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
 					<div class="w-full h-full rounded-3xl ring-[9999px] ring-black/40 bg-transparent"></div>
-					<div class="absolute inset-0 rounded-3xl border-2 border-white/50"></div>
+					<div class="absolute inset-0 rounded-3xl border-2 border-white/40 bg-white/5 backdrop-blur-sm" style="-webkit-backdrop-filter: blur(8px);"></div>
 				</div>
 			</div>
 		</div>
 
 		<div
-			class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-6 px-6 flex flex-col items-center gap-3"
+			class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-6 px-6 flex flex-col items-center gap-3 bg-black/40 backdrop-blur-xl border-t border-white/10"
+			style="-webkit-backdrop-filter: blur(24px); transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);"
 			class:translate-y-0={visible}
 			class:translate-y-full={!visible}
-			style="transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);"
 		>
 			{#if status === "scanning"}
 				<p class="text-white/70 text-sm text-center">Point your camera at the login QR code</p>
