@@ -118,5 +118,31 @@
   body {
     @apply bg-background text-foreground;
     font-family: "Google Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Fluid spring easing for app-like feel */
+@layer utilities {
+  .spring-transition {
+    transition-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.0);
+  }
+  .touch-press:active {
+    transform: scale(0.97);
+    transition: transform 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.0);
+  }
+}
+
+/* Overscroll behavior for app feel */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* Smooth scrolling on mobile */
+@media (max-width: 768px) {
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 }

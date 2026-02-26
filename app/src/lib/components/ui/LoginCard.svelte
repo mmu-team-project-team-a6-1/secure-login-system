@@ -9,22 +9,40 @@
 
 	let mode = $state<Mode>("login");
 	let username = $state("");
-	let passkeyLoading = $state(false);
-	let passkeyError = $state<string | null>(null);
+	let loading = $state(false);
+	let errorMsg = $state<string | null>(null);
 
 	function setMode(m: Mode) {
 		mode = m;
-		passkeyError = null;
+		errorMsg = null;
 	}
 
-	function handleSignup(e: SubmitEvent) {
+	async function handleSignup(e: SubmitEvent) {
 		e.preventDefault();
-		console.log("signup", { username });
+		errorMsg = null;
+		loading = true;
+		try {
+			const res = await fetch("/api/auth/signup", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ username: username.trim() }),
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				errorMsg = data.error ?? "Signup failed";
+				return;
+			}
+			window.location.href = "/dashboard";
+		} catch {
+			errorMsg = "Network error";
+		} finally {
+			loading = false;
+		}
 	}
 
 	async function handlePasskeyLogin() {
-		passkeyError = null;
-		passkeyLoading = true;
+		errorMsg = null;
+		loading = true;
 		try {
 			const credential = await navigator.credentials.get({
 				mediation: "optional",
@@ -34,13 +52,40 @@
 					userVerification: "preferred",
 				},
 			});
-			if (credential) {
-				console.log("passkey login", credential);
+			if (!credential) {
+				errorMsg = "No credential selected";
+				return;
 			}
+			// In a real app, send credential to server for verification.
+			// For this demo, fall through to /api/auth/login with the username prompt.
+			errorMsg = "Passkey received — use Sign Up to create a demo account";
 		} catch (err) {
-			passkeyError = err instanceof Error ? err.message : "Passkey sign-in failed";
+			errorMsg = err instanceof Error ? err.message : "Passkey sign-in failed";
 		} finally {
-			passkeyLoading = false;
+			loading = false;
+		}
+	}
+
+	async function handleLogin(e: SubmitEvent) {
+		e.preventDefault();
+		errorMsg = null;
+		loading = true;
+		try {
+			const res = await fetch("/api/auth/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ username: username.trim() }),
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				errorMsg = data.error ?? "Login failed";
+				return;
+			}
+			window.location.href = "/dashboard";
+		} catch {
+			errorMsg = "Network error";
+		} finally {
+			loading = false;
 		}
 	}
 </script>
@@ -88,41 +133,68 @@
 				<Button
 					type="submit"
 					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md transition-colors duration-150"
+					disabled={loading}
 				>
-					Sign up
+					{loading ? "Creating account..." : "Sign up"}
 				</Button>
 			</form>
 		{:else}
-			<div class="flex gap-3">
+			<form onsubmit={handleLogin} class="space-y-4">
+				<div class="flex gap-3">
+					<Button
+						variant="default"
+						class="flex-1 bg-[#4F83C2] hover:bg-[#4373AB] text-white h-10 rounded-md transition-colors duration-150"
+						type="button"
+						disabled
+					>
+						Log in
+					</Button>
+					<Button
+						variant="default"
+						class="flex-1 bg-[#111111] hover:bg-[#222222] text-white h-10 rounded-md transition-colors duration-150"
+						onclick={() => setMode("signup")}
+						type="button"
+					>
+						Sign up
+					</Button>
+				</div>
+				<div class="space-y-2">
+					<Label for="login-username" class="text-neutral-800">Username</Label>
+					<Input
+						id="login-username"
+						type="text"
+						placeholder="Enter username"
+						bind:value={username}
+						required
+						autocomplete="username"
+						class="bg-white border-neutral-300"
+					/>
+				</div>
 				<Button
-					variant="default"
-					class="flex-1 bg-[#4F83C2] hover:bg-[#4373AB] text-white h-10 rounded-md transition-colors duration-150"
-					type="button"
-					disabled
+					type="submit"
+					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md transition-colors duration-150"
+					disabled={loading}
 				>
-					Log in
+					{loading ? "Signing in..." : "Log in"}
 				</Button>
+				<div class="relative flex items-center gap-3">
+					<div class="flex-1 h-px bg-neutral-300"></div>
+					<span class="text-xs text-neutral-500">or</span>
+					<div class="flex-1 h-px bg-neutral-300"></div>
+				</div>
 				<Button
-					variant="default"
-					class="flex-1 bg-[#111111] hover:bg-[#222222] text-white h-10 rounded-md transition-colors duration-150"
-					onclick={() => setMode("signup")}
 					type="button"
+					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
+					onclick={handlePasskeyLogin}
+					disabled={loading}
 				>
-					Sign up
+					<Fingerprint class="size-5" />
+					{loading ? "Signing in..." : "Log in with passkey"}
 				</Button>
-			</div>
-			<Button
-				type="button"
-				class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md mt-4 gap-2 transition-colors duration-150"
-				onclick={handlePasskeyLogin}
-				disabled={passkeyLoading}
-			>
-				<Fingerprint class="size-5" />
-				{passkeyLoading ? "Signing in…" : "Log in with passkey"}
-			</Button>
-			{#if passkeyError}
-				<p class="text-sm text-red-600 mt-2">{passkeyError}</p>
-			{/if}
+			</form>
+		{/if}
+		{#if errorMsg}
+			<p class="text-sm text-red-600 mt-3">{errorMsg}</p>
 		{/if}
 	</Card.Content>
 </Card.Root>

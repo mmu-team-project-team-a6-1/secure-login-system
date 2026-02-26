@@ -1,18 +1,12 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import QRCode from "qrcode";
 	import LoginCard from "$lib/components/ui/LoginCard.svelte";
 	import QRLoginCard from "$lib/components/ui/QRLoginCard.svelte";
-
-	let qrDataUrl = $state<string | null>(null);
-
-	onMount(() => {
-		const loginUrl = "https://example.com/app-login";
-		QRCode.toDataURL(loginUrl, { width: 192, margin: 1 }).then((url) => {
-			qrDataUrl = url;
-		});
-	});
 </script>
+
+<svelte:head>
+	<title>Sign in — Secure Login System</title>
+	<meta name="theme-color" content="#B784C7" />
+</svelte:head>
 
 <h1 class="sr-only">Secure Login System</h1>
 
@@ -28,7 +22,7 @@
 		>
 			<div class="flex flex-row items-center gap-16 w-full justify-center">
 				<LoginCard />
-				<QRLoginCard {qrDataUrl} />
+				<QRLoginCard />
 			</div>
 		</div>
 	</div>
