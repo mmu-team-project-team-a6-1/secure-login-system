@@ -119,7 +119,7 @@
 	}
 </script>
 
-<Card.Root class="w-full max-w-sm rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl p-8">
+<Card.Root class="w-full max-w-sm rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] liquid-glass p-8">
 	<Card.Header class="p-0 pb-1">
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">Welcome</Card.Title>
 		<Card.Description class="text-sm text-neutral-700">
@@ -136,7 +136,8 @@
 				<div class="space-y-4">
 					<Button
 						type="button"
-						class="w-full h-11 rounded-lg gap-2"
+						variant="primary"
+						class="w-full h-11 rounded-lg gap-2 !bg-black !text-white !border-black/80 hover:!bg-black/90"
 						onclick={handlePasskeyLogin}
 						disabled={loading}
 					>
@@ -161,7 +162,8 @@
 					</div>
 					<Button
 						type="submit"
-						class="w-full h-11 rounded-lg gap-2"
+						variant="primary"
+						class="w-full h-11 rounded-lg gap-2 !bg-black !text-white !border-black/80 hover:!bg-black/90"
 						disabled={loading}
 					>
 						<Fingerprint class="size-5" />

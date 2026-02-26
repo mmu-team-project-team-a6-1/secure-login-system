@@ -405,7 +405,17 @@
 					<Loader2 class="size-5 text-white animate-spin" />
 					<span class="text-white/70 text-sm font-medium">Approving...</span>
 				</div>
+			{:else if !approvalReady}
+				<!-- Placeholder during countdown: no slider, just greyed-out button look -->
+				<div
+					class="w-full h-14 rounded-full bg-white/10 border border-white/15 flex items-center justify-center opacity-70 pointer-events-none select-none"
+					style="-webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);"
+					aria-hidden="true"
+				>
+					<span class="text-sm font-medium text-white/50">Wait {countdown}s...</span>
+				</div>
 			{:else}
+				<!-- Actual slider (only when countdown finished) -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={trackEl}
@@ -413,25 +423,22 @@
 					style="-webkit-backdrop-filter: blur(24px);"
 				>
 					<span
-						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 {approvalReady ? 'text-white/50' : 'text-white/30'}"
-						style="opacity: {approvalReady ? Math.max(0, 1 - (sliderX / Math.max(getMaxTravel(), 1)) * 1.5) : 1};
+						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-white/50"
+						style="opacity: {Math.max(0, 1 - (sliderX / Math.max(getMaxTravel(), 1)) * 1.5)};
 							   transition: {isDragging ? 'none' : 'opacity 0.3s'};"
 					>
-						{#if !approvalReady}
-							Wait {countdown}s...
-						{:else}
-							Slide to approve
-						{/if}
+						Slide to approve
 					</span>
-					<!-- Glass sheet fill (rounded rect dragged by thumb) -->
+					<!-- Glass sheet fill (semi-opaque, never fully opaque) -->
 					<div
-						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/10 border border-white/15 border-r-0"
+						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/20 border border-white/15 border-r-0"
 						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 					></div>
 					<div
-						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] {approvalReady ? 'bg-white shadow-lg' : 'bg-white/10'}"
+						class="liquid-glass liquid-glass-filter absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white/30 border border-white/20"
 						style="transform: translateX({sliderX}px);
-							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), background-color 0.3s'};"
+							   -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 						onpointerdown={onSliderPointerDown}
 						onpointermove={onSliderPointerMove}
 						onpointerup={onSliderPointerUp}
@@ -443,7 +450,7 @@
 						aria-label="Slide to approve login"
 						tabindex={0}
 					>
-						<ChevronRight class="size-5 {approvalReady ? 'text-black' : 'text-white/30'}" />
+						<ChevronRight class="size-5 text-white/90" />
 					</div>
 				</div>
 			{/if}

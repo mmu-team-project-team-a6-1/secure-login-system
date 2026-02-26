@@ -170,6 +170,30 @@
   .dark .btn-glass:hover:not(:disabled) {
     filter: brightness(1.08);
   }
+  /* Same as btn-glass but no shadow (e.g. bottom nav, non-floating surfaces) */
+  .btn-glass-flat {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    box-shadow: none;
+  }
+  .btn-glass-flat:hover:not(:disabled) {
+    filter: brightness(0.97);
+  }
+  .dark .btn-glass-flat:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  /* Liquid glass: backdrop blur + optional SVG distortion (use on small/medium elements) */
+  .liquid-glass {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+  @supports (filter: url(#liquid-glass)) {
+    .liquid-glass-filter {
+      filter: url(#liquid-glass);
+    }
+  }
 }
 
 /* Overscroll behavior for app feel */

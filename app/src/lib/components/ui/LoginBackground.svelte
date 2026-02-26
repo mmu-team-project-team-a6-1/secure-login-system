@@ -13,12 +13,12 @@
 	>
 		<defs>
 			<linearGradient id="wave-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
-				<stop offset="0%" stop-color="#5B9BF5" stop-opacity="0.4" />
-				<stop offset="100%" stop-color="#3B82F6" stop-opacity="0.25" />
+				<stop offset="0%" stop-color="#C9A8D9" stop-opacity="0.45" />
+				<stop offset="100%" stop-color="#B784C7" stop-opacity="0.3" />
 			</linearGradient>
 			<linearGradient id="wave-grad-2" x1="100%" y1="0%" x2="0%" y2="100%">
-				<stop offset="0%" stop-color="#93C5FD" stop-opacity="0.3" />
-				<stop offset="100%" stop-color="#60A5FA" stop-opacity="0.15" />
+				<stop offset="0%" stop-color="#D4B8E0" stop-opacity="0.35" />
+				<stop offset="100%" stop-color="#C9A8D9" stop-opacity="0.2" />
 			</linearGradient>
 			<filter id="wave-blur" x="-20%" y="-20%" width="140%" height="140%">
 				<feGaussianBlur in="SourceGraphic" stdDeviation="24" result="blur" />

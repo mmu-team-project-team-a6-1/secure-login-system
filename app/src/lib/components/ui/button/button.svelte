@@ -9,7 +9,8 @@
 			variant: {
 				default:
 					"bg-[var(--glass-bg)] backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)] border border-[var(--glass-border)] shadow-[var(--glass-shadow)] text-foreground hover:bg-black/5 dark:hover:bg-white/5",
-				primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[var(--glass-shadow)]",
+				primary:
+					"bg-primary/90 text-primary-foreground backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)] border border-primary/70 hover:bg-primary/95 shadow-[var(--glass-shadow)]",
 				destructive:
 					"bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white",
 				outline:

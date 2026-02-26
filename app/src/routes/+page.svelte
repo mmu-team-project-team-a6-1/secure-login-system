@@ -6,12 +6,12 @@
 
 <svelte:head>
 	<title>Sign in — Secure Login System</title>
-	<meta name="theme-color" content="#3B82F6" />
+	<meta name="theme-color" content="#B784C7" />
 </svelte:head>
 
 <h1 class="sr-only">Secure Login System</h1>
 
-<div class="relative min-h-screen flex flex-col items-center justify-center bg-[#3B82F6] p-4 md:p-6 overflow-x-hidden lg:flex-row">
+<div class="relative min-h-screen flex flex-col items-center justify-center bg-[#B784C7] p-4 md:p-6 overflow-x-hidden lg:flex-row">
 	<LoginBackground />
 	<div class="relative z-0 flex flex-col items-center justify-center w-full max-w-sm flex-1 lg:hidden">
 		<div

@@ -29,6 +29,16 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
+<!-- Global SVG filter for liquid glass effect (feTurbulence + feDisplacementMap) -->
+<svg aria-hidden="true" width="0" height="0" style="position: absolute;">
+	<defs>
+		<filter id="liquid-glass" color-interpolation-filters="sRGB">
+			<feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise" />
+			<feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
+		</filter>
+	</defs>
+</svg>
+
 {#if !disclaimerDismissed}
 	<AlertDialog.Root bind:open={disclaimerOpen}>
 		<AlertDialog.Content>
