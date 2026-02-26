@@ -5,7 +5,7 @@
 </script>
 
 <Card.Root class="w-full max-w-sm bg-[#E7E7E7] border-[#1C1C1C] rounded-[28px] p-8 shadow-none">
-	<Card.Header class="p-0 pb-6">
+	<Card.Header class="p-0 pb-1">
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">
 			Log in with mobile app
 		</Card.Title>
@@ -15,7 +15,7 @@
 	</Card.Header>
 	<Card.Content class="p-0 flex items-center justify-center">
 		<div
-			class="w-48 h-48 rounded-lg border border-neutral-300 bg-white p-3 flex items-center justify-center"
+			class="w-48 h-48 rounded-2xl border border-neutral-300 bg-white p-3 flex items-center justify-center"
 		>
 			{#if qrDataUrl}
 				<img

@@ -46,7 +46,7 @@
 </script>
 
 <Card.Root class="w-full max-w-sm bg-[#E7E7E7] border-[#1C1C1C] rounded-[24px] p-8 shadow-none">
-	<Card.Header class="p-0 pb-6">
+	<Card.Header class="p-0 pb-1">
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">Welcome</Card.Title>
 		<Card.Description class="text-sm text-neutral-600">
 			{mode === "login" ? "Sign in to your account" : "Create an account with your username"}
