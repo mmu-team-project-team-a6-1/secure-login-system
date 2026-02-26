@@ -147,7 +147,16 @@
 		}
 	}
 
-	function denyLogin() {
+	async function denyLogin() {
+		if (pendingSessionId) {
+			try {
+				await fetch("/api/auth/qr-deny", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ sessionId: pendingSessionId }),
+				});
+			} catch { /* best-effort */ }
+		}
 		pendingSessionId = null;
 		desktopInfo = null;
 		handleClose();

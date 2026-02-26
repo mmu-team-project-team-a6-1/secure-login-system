@@ -139,6 +139,14 @@ export function approveQRSession(id: string, userId: string): boolean {
 	return true;
 }
 
+export function denyQRSession(id: string, userId: string): boolean {
+	const qs = getQRSession(id);
+	if (!qs || qs.status !== "scanned") return false;
+	if (qs.authorizedBy !== userId) return false;
+	qs.status = "denied";
+	return true;
+}
+
 // ---------------------------------------------------------------------------
 // Login activity
 // ---------------------------------------------------------------------------

@@ -3,13 +3,13 @@
 	import QRCode from "qrcode";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import { generateToken, nowEpochSeconds } from "$lib/utils/totp";
-	import { RefreshCw, Loader2, ShieldCheck } from "@lucide/svelte";
+	import { RefreshCw, Loader2, ShieldCheck, ShieldX } from "@lucide/svelte";
 
 	let sessionId = $state<string | null>(null);
 	let secret = $state<string | null>(null);
 	let qrImages = $state<[string | null, string | null]>([null, null]);
 	let activeSlot = $state(0);
-	let status = $state<"loading" | "active" | "scanned" | "authenticated" | "expired">("loading");
+	let status = $state<"loading" | "active" | "scanned" | "authenticated" | "expired" | "denied">("loading");
 	let error = $state<string | null>(null);
 
 	let rotateTimer: ReturnType<typeof setInterval> | undefined;
@@ -76,6 +76,10 @@
 						status = "scanned";
 						stopRotation();
 					}
+				} else if (data.status === "denied") {
+					status = "denied";
+					stopRotation();
+					stopPolling();
 				} else if (data.status === "expired") {
 					status = "expired";
 					stopRotation();
@@ -109,6 +113,8 @@
 				Confirm the login on your mobile device
 			{:else if status === "authenticated"}
 				Login approved — redirecting...
+			{:else if status === "denied"}
+				Login was denied on the mobile device
 			{:else}
 				Scan the QR code with your mobile app to sign in
 			{/if}
@@ -145,6 +151,18 @@
 				<div class="flex flex-col items-center gap-2">
 					<ShieldCheck class="size-10 text-green-500" />
 					<span class="text-green-600 text-sm font-medium">Approved!</span>
+				</div>
+			{:else if status === "denied"}
+				<div class="flex flex-col items-center gap-2">
+					<ShieldX class="size-10 text-red-400" />
+					<span class="text-red-500 text-sm font-medium">Login denied</span>
+					<button
+						onclick={() => window.location.reload()}
+						class="flex items-center gap-1.5 text-xs font-medium text-[#4F83C2] hover:text-[#4373AB] transition-colors"
+					>
+						<RefreshCw class="size-3.5" />
+						Try again
+					</button>
 				</div>
 			{:else}
 				{#each [0, 1] as slot}

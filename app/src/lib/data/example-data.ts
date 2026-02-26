@@ -145,7 +145,7 @@ export const mockLoginActivity: LoginActivity[] = [
 // QR Sessions (temporary handshake for cross-device login)
 // ---------------------------------------------------------------------------
 
-export type QRSessionStatus = "pending" | "scanned" | "authenticated" | "expired";
+export type QRSessionStatus = "pending" | "scanned" | "authenticated" | "expired" | "denied";
 
 export interface QRSessionGeo {
 	city: string | null;
