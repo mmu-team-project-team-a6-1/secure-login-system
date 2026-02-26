@@ -19,7 +19,6 @@
 <div class="min-h-screen flex items-center justify-center bg-[#B784C7] p-4 md:p-6">
 	<div class="flex flex-col items-center gap-8 w-full max-w-[420px] lg:hidden">
 		<LoginCard />
-		<QRLoginCard {qrDataUrl} />
 	</div>
 
 	<div class="relative w-full max-w-6xl min-h-[70vh] overflow-x-clip hidden lg:block">
