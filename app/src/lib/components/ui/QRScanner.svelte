@@ -5,7 +5,7 @@
 
 	let { onclose }: { onclose: () => void } = $props();
 
-	let status = $state<"scanning" | "verifying" | "approving" | "approving-loading" | "success" | "error">("scanning");
+	let status = $state<"scanning" | "verifying" | "verified" | "approving" | "approving-loading" | "success" | "error">("scanning");
 	let errorMsg = $state("");
 	let visible = $state(false);
 	let closing = $state(false);
@@ -24,6 +24,9 @@
 	let stream: MediaStream | null = null;
 	let scanLoop: number | undefined;
 	let destroyed = false;
+	let qrInFrame = $state(false);
+	const SCAN_DELAY_MS = 700;
+	let verifiedTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let countdown = $state(3);
 	let approvalReady = $derived(countdown <= 0);
@@ -32,6 +35,13 @@
 	let trackEl: HTMLDivElement | undefined = $state();
 	const THUMB_SIZE = 48;
 	const THUMB_PAD = 4;
+
+	// Deterministic scattered positions for success particles (10–90% range)
+	const PARTICLE_COUNT = 48;
+	const scatteredPositions = Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+		x: 10 + ((i * 37) % 81),
+		y: 10 + ((i * 53) % 81),
+	}));
 
 	$effect(() => {
 		if (status === "approving") {
@@ -99,6 +109,8 @@
 
 	onDestroy(() => {
 		destroyed = true;
+		if (verifiedTimer) clearTimeout(verifiedTimer);
+		verifiedTimer = undefined;
 		stopCamera();
 	});
 
@@ -111,6 +123,8 @@
 
 	function startScanning() {
 		const detector = new BarcodeDetector({ formats: ["qr_code"] });
+		let lastDecoded: string | null = null;
+		let delayStart = 0;
 
 		async function tick() {
 			if (destroyed || status !== "scanning" || !videoEl || videoEl.readyState < 2) {
@@ -120,12 +134,24 @@
 
 			try {
 				const codes = await detector.detect(videoEl);
+				qrInFrame = codes.length > 0;
 				if (codes.length > 0) {
-					await onScanSuccess(codes[0].rawValue);
-					return;
+					const decoded = codes[0].rawValue;
+					if (decoded !== lastDecoded) {
+						lastDecoded = decoded;
+						delayStart = Date.now();
+					}
+					if (Date.now() - delayStart >= SCAN_DELAY_MS) {
+						lastDecoded = null;
+						await onScanSuccess(decoded);
+						return;
+					}
+				} else {
+					lastDecoded = null;
 				}
 			} catch {
-				/* detection can fail on individual frames */
+				qrInFrame = false;
+				lastDecoded = null;
 			}
 
 			scanLoop = requestAnimationFrame(tick);
@@ -163,10 +189,15 @@
 
 			if (res.ok) {
 				const data = await res.json();
-				stopCamera();
 				pendingSessionId = data.sessionId ?? null;
 				desktopInfo = data.desktop;
-				status = "approving";
+				status = "verified";
+				stopCamera();
+				verifiedTimer = setTimeout(() => {
+					verifiedTimer = undefined;
+					if (destroyed) return;
+					status = "approving";
+				}, 1000);
 			} else {
 				const data = await res.json();
 				status = "error";
@@ -246,6 +277,33 @@
 </script>
 
 <style>
+	.scanner-outside-blur {
+		-webkit-backdrop-filter: blur(20px);
+		backdrop-filter: blur(20px);
+		background: rgba(0, 0, 0, 0.25);
+	}
+	.scan-box-border {
+		border-width: 2px;
+		border-style: solid;
+		border-color: rgba(255, 255, 255, 0.4);
+		box-shadow: 0 0 0 0 transparent;
+		transition: border-color 0.2s, box-shadow 0.2s;
+	}
+	.scan-box-glow {
+		border-color: rgba(255, 255, 255, 0.9);
+		box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(100, 200, 255, 0.2);
+	}
+	.scan-box-success {
+		border-color: rgb(34, 197, 94);
+		box-shadow: 0 0 16px rgba(34, 197, 94, 0.5);
+	}
+	.scan-box-error {
+		border-color: rgb(239, 68, 68);
+		box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+	}
+	.scan-box-inner-blur {
+		background: rgba(255, 255, 255, 0.03);
+	}
 	.approval-sheet {
 		transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
 	}
@@ -271,6 +329,14 @@
 	.success-particle-burst {
 		animation: success-particle-burst 1.2s ease-out forwards, success-particle-drift 4s ease-in-out 1s infinite;
 		opacity: 0;
+	}
+	/* Mobile: scatter from center to final position in ~150ms, then drift */
+	@media (max-width: 768px) {
+		.success-particle-burst {
+			animation: success-particle-scatter 0.15s ease-out forwards,
+				success-particle-drift-scattered 4s ease-in-out 0.15s infinite;
+			opacity: 0;
+		}
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.success-particle,
@@ -303,6 +369,31 @@
 			opacity: 0.55;
 		}
 	}
+	@keyframes success-particle-scatter {
+		0% {
+			transform: translate(-50%, -50%) scale(0.2);
+			opacity: 0;
+		}
+		100% {
+			transform: translate(calc(var(--tx) * 1% - 50%), calc(var(--ty) * 1% - 50%)) scale(1);
+			opacity: 0.6;
+		}
+	}
+	@keyframes success-particle-drift-scattered {
+		0%,
+		100% {
+			transform: translate(calc(var(--tx) * 1% - 50%), calc(var(--ty) * 1% - 50%)) scale(1);
+			opacity: 0.5;
+		}
+		50% {
+			transform: translate(
+					calc(var(--tx) * 1% - 50% + 4px),
+					calc(var(--ty) * 1% - 50% - 12px)
+				)
+				scale(1.15);
+			opacity: 0.85;
+		}
+	}
 	@keyframes success-particle-drift {
 		0%,
 		100% {
@@ -332,12 +423,13 @@
 				style="background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(0, 168, 142, 0.35) 0%, rgba(111, 207, 151, 0.2) 40%, transparent 70%);"
 				aria-hidden="true"
 			></div>
-			<!-- Active green particles (shoot + drift) -->
+			<!-- Active green particles (shoot + drift; on mobile: scatter from center) -->
 			<div class="success-particles absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-				{#each Array(48) as _, i}
+				{#each Array(PARTICLE_COUNT) as _, i}
+					{@const pos = scatteredPositions[i]}
 					<span
 						class="success-particle success-particle-burst absolute rounded-full bg-emerald-400/50"
-						style="width: {3 + (i % 6)}px; height: {3 + (i % 6)}px; left: {40 + (i * 7.3) % 20}%; top: {50 + (i * 5.1) % 20}%; animation-delay: {(i % 20) * 0.05}s;"
+						style="width: {3 + (i % 6)}px; height: {3 + (i % 6)}px; left: 50%; top: 50%; --tx: {pos.x}; --ty: {pos.y}; animation-delay: {(i % 20) * 0.02}s;"
 					></span>
 				{/each}
 			</div>
@@ -436,7 +528,7 @@
 					style="transition: background-color 0.3s; -webkit-backdrop-filter: blur(24px);"
 				>
 					<span
-						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none {approvalReady ? 'text-white/50' : 'text-white/30'}"
+						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 {approvalReady ? 'text-white/50' : 'text-white/30'}"
 						style="opacity: {approvalReady ? Math.max(0, 1 - (sliderX / Math.max(getMaxTravel(), 1)) * 1.5) : 1};
 							   transition: {isDragging ? 'none' : 'opacity 0.3s'};"
 					>
@@ -446,8 +538,13 @@
 							Slide to approve
 						{/if}
 					</span>
+					<!-- Glass sheet fill (rounded rect dragged by thumb) -->
 					<div
-						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center {approvalReady ? 'bg-white shadow-lg' : 'bg-white/20'}"
+						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/20 border border-white/20 border-r-0"
+						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
+					></div>
+					<div
+						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] {approvalReady ? 'bg-white shadow-lg' : 'bg-white/20'}"
 						style="transform: translateX({sliderX}px);
 							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), background-color 0.3s'};"
 						onpointerdown={onSliderPointerDown}
@@ -506,12 +603,31 @@
 				muted
 			></video>
 
-			<div class="absolute inset-0 z-10 pointer-events-none">
-				<div class="absolute inset-0 bg-black/40"></div>
-				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
-					<div class="w-full h-full rounded-3xl ring-[9999px] ring-black/40 bg-transparent"></div>
-					<div class="absolute inset-0 rounded-3xl border-2 border-white/40 bg-white/5 backdrop-blur-sm" style="-webkit-backdrop-filter: blur(8px);"></div>
-				</div>
+			<!-- Full-screen blur outside scan box (mask cuts out center) -->
+			<svg width="0" height="0" aria-hidden="true" focusable="false">
+				<defs>
+					<mask id="scanner-outside-mask" maskContentUnits="objectBoundingBox">
+						<rect x="0" y="0" width="1" height="1" fill="white" />
+						<rect x="0.3" y="0.3" width="0.4" height="0.4" rx="0.06" ry="0.06" fill="black" />
+					</mask>
+				</defs>
+			</svg>
+			<div
+				class="absolute inset-0 z-10 pointer-events-none scanner-outside-blur"
+				style="mask: url(#scanner-outside-mask); -webkit-mask: url(#scanner-outside-mask); mask-size: 100% 100%; -webkit-mask-size: 100% 100%;"
+			></div>
+			<!-- Center box: border + optional light blur when no QR -->
+			<div
+				class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-10 pointer-events-none rounded-3xl box-border scan-box-border"
+				class:scan-box-glow={(status === "scanning" && qrInFrame) || status === "verifying"}
+				class:scan-box-success={status === "verified"}
+				class:scan-box-error={status === "error"}
+			>
+			<div
+				class="absolute inset-0 rounded-3xl scan-box-inner-blur transition-[filter] duration-200"
+				class:scan-box-blur-on={status === "scanning" && !qrInFrame}
+				style="-webkit-backdrop-filter: {status === 'scanning' && !qrInFrame ? 'blur(4px)' : 'none'}; backdrop-filter: {status === 'scanning' && !qrInFrame ? 'blur(4px)' : 'none'};"
+			></div>
 			</div>
 		</div>
 
@@ -528,6 +644,8 @@
 					<Loader2 class="size-5 text-white animate-spin" />
 					<p class="text-white text-sm">Verifying...</p>
 				</div>
+			{:else if status === "verified"}
+				<p class="text-green-400 text-sm text-center">Login recognized — opening confirmation...</p>
 			{:else if status === "error"}
 				<div class="flex items-center gap-2">
 					<AlertCircle class="size-5 text-red-400" />
