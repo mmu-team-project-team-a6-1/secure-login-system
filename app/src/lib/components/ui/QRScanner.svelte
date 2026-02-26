@@ -270,11 +270,6 @@
 </script>
 
 <style>
-	.scanner-outside-blur {
-		-webkit-backdrop-filter: blur(20px);
-		backdrop-filter: blur(20px);
-		background: rgba(0, 0, 0, 0.25);
-	}
 	.scan-box-border {
 		border-width: 2px;
 		border-style: solid;
@@ -493,24 +488,7 @@
 				muted
 			></video>
 
-			<!-- Full-screen blur with rounded-rect punch-out (mask + clip-path for redundancy) -->
-			<svg width="0" height="0" aria-hidden="true" focusable="false">
-				<defs>
-					<mask id="scanner-outside-mask" maskContentUnits="objectBoundingBox">
-						<rect x="0" y="0" width="1" height="1" fill="white" />
-						<rect x="0.3" y="0.3" width="0.4" height="0.4" rx="0.06" ry="0.06" fill="black" />
-					</mask>
-					<clipPath id="scanner-punch-clip" clipPathUnits="objectBoundingBox" clip-rule="evenodd">
-						<rect x="0" y="0" width="1" height="1" />
-						<rect x="0.3" y="0.3" width="0.4" height="0.4" rx="0.06" ry="0.06" />
-					</clipPath>
-				</defs>
-			</svg>
-			<div
-				class="absolute inset-0 z-10 pointer-events-none scanner-outside-blur"
-				style="mask: url(#scanner-outside-mask); -webkit-mask: url(#scanner-outside-mask); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; clip-path: url(#scanner-punch-clip); -webkit-clip-path: url(#scanner-punch-clip);"
-			></div>
-			<!-- Center box: border only (clear window through blur) -->
+			<!-- Center box: border only -->
 			<div
 				class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-10 pointer-events-none rounded-3xl box-border scan-box-border"
 				class:scan-box-glow={(status === "scanning" && qrInFrame) || status === "verifying"}
