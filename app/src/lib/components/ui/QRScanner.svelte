@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
 	import { BarcodeDetector } from "barcode-detector";
-	import { X, CheckCircle, AlertCircle, Loader2, Monitor, MapPin, Globe, ShieldCheck } from "@lucide/svelte";
+	import { X, CheckCircle, AlertCircle, AlertTriangle, Loader2, Monitor, MapPin, Globe, ShieldCheck, ChevronRight } from "@lucide/svelte";
 
 	let { onclose }: { onclose: () => void } = $props();
 
@@ -21,6 +21,57 @@
 	let stream: MediaStream | null = null;
 	let scanLoop: number | undefined;
 	let destroyed = false;
+
+	let countdown = $state(3);
+	let approvalReady = $derived(countdown <= 0);
+	let sliderX = $state(0);
+	let isDragging = $state(false);
+	let trackEl: HTMLDivElement | undefined = $state();
+	const THUMB_SIZE = 48;
+	const THUMB_PAD = 4;
+
+	$effect(() => {
+		if (status === "approving") {
+			countdown = 3;
+			sliderX = 0;
+			const timer = setInterval(() => {
+				countdown--;
+				if (countdown <= 0) clearInterval(timer);
+			}, 1000);
+			return () => clearInterval(timer);
+		}
+	});
+
+	function getMaxTravel() {
+		if (!trackEl) return 200;
+		return trackEl.clientWidth - THUMB_SIZE - THUMB_PAD * 2;
+	}
+
+	function onSliderPointerDown(e: PointerEvent) {
+		if (!approvalReady || status !== "approving") return;
+		isDragging = true;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	}
+
+	function onSliderPointerMove(e: PointerEvent) {
+		if (!isDragging) return;
+		const max = getMaxTravel();
+		const rect = trackEl!.getBoundingClientRect();
+		const x = e.clientX - rect.left - THUMB_PAD - THUMB_SIZE / 2;
+		sliderX = Math.max(0, Math.min(x, max));
+	}
+
+	function onSliderPointerUp() {
+		if (!isDragging) return;
+		isDragging = false;
+		const max = getMaxTravel();
+		if (max > 0 && sliderX / max >= 0.8) {
+			sliderX = max;
+			approveLogin();
+		} else {
+			sliderX = 0;
+		}
+	}
 
 	onMount(async () => {
 		requestAnimationFrame(() => {
@@ -243,33 +294,69 @@
 								<MapPin class="size-4.5 text-white/60 flex-shrink-0" />
 								<div class="min-w-0">
 									<p class="text-xs text-white/40">Location</p>
-									<p class="text-sm text-white font-medium truncate">{desktopInfo.location}</p>
-								</div>
+								<p class="text-sm text-white font-medium truncate">{desktopInfo.location}</p>
 							</div>
-						{/if}
-					</div>
-				{/if}
+						</div>
+					{/if}
+				</div>
 			{/if}
-		</div>
+
+			<div class="w-full max-w-xs rounded-xl bg-amber-500/15 border border-amber-500/30 px-4 py-3 flex gap-3">
+				<AlertTriangle class="size-5 text-amber-400 flex-shrink-0 mt-0.5" />
+				<p class="text-xs text-amber-200/90 leading-relaxed">
+					Only approve if you are logging in on a device directly in front of you.
+					<span class="font-semibold text-amber-300">Never scan a QR code someone sent you.</span>
+				</p>
+			</div>
+		{/if}
+	</div>
 
 		{#if status !== "success"}
 			<div
 				class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-4 px-6 flex flex-col gap-3"
 			>
-				<button
-					onclick={approveLogin}
-					disabled={status === "approving-loading"}
-					class="w-full py-3.5 rounded-2xl bg-white text-black font-semibold text-sm
-						   active:scale-[0.98] transition-all duration-150 disabled:opacity-60
-						   flex items-center justify-center gap-2"
+			{#if status === "approving-loading"}
+				<div class="w-full h-14 rounded-full bg-white/10 flex items-center justify-center gap-2">
+					<Loader2 class="size-5 text-white animate-spin" />
+					<span class="text-white/70 text-sm font-medium">Approving...</span>
+				</div>
+			{:else}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div
+					bind:this={trackEl}
+					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden {approvalReady ? 'bg-white/15' : 'bg-white/5'}"
+					style="transition: background-color 0.3s;"
 				>
-					{#if status === "approving-loading"}
-						<Loader2 class="size-4 animate-spin" />
-						Approving...
-					{:else}
-						Approve Login
-					{/if}
-				</button>
+					<span
+						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none {approvalReady ? 'text-white/50' : 'text-white/30'}"
+						style="opacity: {approvalReady ? Math.max(0, 1 - (sliderX / Math.max(getMaxTravel(), 1)) * 1.5) : 1};
+							   transition: {isDragging ? 'none' : 'opacity 0.3s'};"
+					>
+						{#if !approvalReady}
+							Wait {countdown}s...
+						{:else}
+							Slide to approve
+						{/if}
+					</span>
+					<div
+						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center {approvalReady ? 'bg-white shadow-lg' : 'bg-white/20'}"
+						style="transform: translateX({sliderX}px);
+							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), background-color 0.3s'};"
+						onpointerdown={onSliderPointerDown}
+						onpointermove={onSliderPointerMove}
+						onpointerup={onSliderPointerUp}
+						onpointercancel={onSliderPointerUp}
+						role="slider"
+						aria-valuenow={Math.round((sliderX / Math.max(getMaxTravel(), 1)) * 100)}
+						aria-valuemin={0}
+						aria-valuemax={100}
+						aria-label="Slide to approve login"
+						tabindex={0}
+					>
+						<ChevronRight class="size-5 {approvalReady ? 'text-black' : 'text-white/30'}" />
+					</div>
+				</div>
+			{/if}
 				<button
 					onclick={denyLogin}
 					disabled={status === "approving-loading"}
