@@ -12,8 +12,7 @@
 
 	// Sync store with DOM on client (inline script already set class; this keeps store in sync)
 	onMount(() => {
-		const isDark = document.documentElement.classList.contains("dark");
-		theme.set(isDark ? "dark" : "light");
+		theme.set("light");
 		disclaimerOpen = true;
 	});
 </script>
@@ -40,18 +39,5 @@
 </AlertDialog.Root>
 
 <div class="relative min-h-screen">
-	<Button
-		variant="ghost"
-		size="icon"
-		class="absolute top-4 right-4 z-10 rounded-full"
-		onclick={() => theme.toggle()}
-		aria-label={$theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-	>
-		{#if $theme === "dark"}
-			<Sun class="size-5" />
-		{:else}
-			<Moon class="size-5" />
-		{/if}
-	</Button>
 	{@render children()}
 </div>
