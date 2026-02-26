@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
-	import { Html5Qrcode } from "html5-qrcode";
 	import { X, CheckCircle, AlertCircle, Loader2 } from "@lucide/svelte";
 
 	let { onclose }: { onclose: () => void } = $props();
@@ -8,22 +7,33 @@
 	let status = $state<"scanning" | "verifying" | "success" | "error">("scanning");
 	let errorMsg = $state("");
 	let visible = $state(false);
-	let scanner: Html5Qrcode | null = null;
-	const scannerId = "qr-scanner-region";
+
+	let videoEl: HTMLVideoElement | undefined = $state();
+	let stream: MediaStream | null = null;
+	let scanLoop: number | undefined;
+	let destroyed = false;
 
 	onMount(async () => {
 		requestAnimationFrame(() => {
 			visible = true;
 		});
 
+		if (!("BarcodeDetector" in window)) {
+			status = "error";
+			errorMsg = "QR scanning requires a modern mobile browser";
+			return;
+		}
+
 		try {
-			scanner = new Html5Qrcode(scannerId);
-			await scanner.start(
-				{ facingMode: "environment" },
-				{ fps: 10, qrbox: { width: 250, height: 250 } },
-				onScanSuccess,
-				() => {},
-			);
+			stream = await navigator.mediaDevices.getUserMedia({
+				video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+				audio: false,
+			});
+			if (videoEl) {
+				videoEl.srcObject = stream;
+				await videoEl.play();
+				startScanning();
+			}
 		} catch {
 			status = "error";
 			errorMsg = "Could not access camera";
@@ -31,10 +41,41 @@
 	});
 
 	onDestroy(() => {
-		if (scanner?.isScanning) {
-			scanner.stop().catch(() => {});
-		}
+		destroyed = true;
+		stopCamera();
 	});
+
+	function stopCamera() {
+		if (scanLoop) cancelAnimationFrame(scanLoop);
+		scanLoop = undefined;
+		stream?.getTracks().forEach((t) => t.stop());
+		stream = null;
+	}
+
+	function startScanning() {
+		const detector = new BarcodeDetector({ formats: ["qr_code"] });
+
+		async function tick() {
+			if (destroyed || status !== "scanning" || !videoEl || videoEl.readyState < 2) {
+				if (!destroyed && status === "scanning") scanLoop = requestAnimationFrame(tick);
+				return;
+			}
+
+			try {
+				const codes = await detector.detect(videoEl);
+				if (codes.length > 0) {
+					await onScanSuccess(codes[0].rawValue);
+					return;
+				}
+			} catch {
+				/* detection can fail on individual frames */
+			}
+
+			scanLoop = requestAnimationFrame(tick);
+		}
+
+		scanLoop = requestAnimationFrame(tick);
+	}
 
 	async function onScanSuccess(decoded: string) {
 		if (status !== "scanning") return;
@@ -50,10 +91,6 @@
 		const [, sessionId, token, tsStr] = parts;
 		const timestamp = parseInt(tsStr, 10);
 
-		if (scanner?.isScanning) {
-			await scanner.stop().catch(() => {});
-		}
-
 		status = "verifying";
 
 		try {
@@ -65,6 +102,7 @@
 
 			if (res.ok) {
 				status = "success";
+				stopCamera();
 				setTimeout(handleClose, 1500);
 			} else {
 				const data = await res.json();
@@ -80,32 +118,21 @@
 	}
 
 	function resetAfterDelay() {
-		setTimeout(async () => {
+		setTimeout(() => {
+			if (destroyed) return;
 			status = "scanning";
 			errorMsg = "";
-			try {
-				if (scanner && !scanner.isScanning) {
-					await scanner.start(
-						{ facingMode: "environment" },
-						{ fps: 10, qrbox: { width: 250, height: 250 } },
-						onScanSuccess,
-						() => {},
-					);
-				}
-			} catch {
-				/* camera may be unavailable */
-			}
+			startScanning();
 		}, 2500);
 	}
 
 	function handleClose() {
 		visible = false;
+		stopCamera();
 		setTimeout(onclose, 350);
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
 	class="fixed inset-0 z-50 flex flex-col bg-black"
 	class:opacity-0={!visible}
@@ -126,11 +153,25 @@
 
 	<!-- Camera viewfinder -->
 	<div class="flex-1 relative flex items-center justify-center overflow-hidden">
-		<div id={scannerId} class="w-full h-full absolute inset-0"></div>
+		<!-- Raw video stream — full control, no library DOM -->
+		<video
+			bind:this={videoEl}
+			class="absolute inset-0 w-full h-full object-cover"
+			autoplay
+			playsinline
+			muted
+		></video>
 
-		<!-- Viewfinder overlay -->
-		<div class="relative z-10 pointer-events-none">
-			<div class="w-64 h-64 rounded-3xl border-2 border-white/40"></div>
+		<!-- Viewfinder overlay with cutout effect -->
+		<div class="absolute inset-0 z-10 pointer-events-none">
+			<!-- Semi-transparent surround -->
+			<div class="absolute inset-0 bg-black/40"></div>
+			<!-- Transparent cutout in center -->
+			<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
+				<div class="w-full h-full rounded-3xl ring-[9999px] ring-black/40 bg-transparent"></div>
+				<!-- Corner accents -->
+				<div class="absolute inset-0 rounded-3xl border-2 border-white/50"></div>
+			</div>
 		</div>
 	</div>
 
@@ -161,20 +202,3 @@
 		{/if}
 	</div>
 </div>
-
-<style>
-	:global(#qr-scanner-region video) {
-		object-fit: cover !important;
-		width: 100% !important;
-		height: 100% !important;
-	}
-	:global(#qr-scanner-region) {
-		border: none !important;
-	}
-	:global(#qr-scanner-region img[alt="Info icon"]) {
-		display: none !important;
-	}
-	:global(#qr-shaded-region) {
-		display: none !important;
-	}
-</style>

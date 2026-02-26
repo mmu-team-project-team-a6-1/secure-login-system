@@ -1,17 +1,17 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { findUserByUsername, createSession, recordLogin } from "$lib/server/store";
+import { findUserByCredentialId, createSession, recordLogin } from "$lib/server/store";
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
-	const { username } = await request.json();
+	const { credentialId } = await request.json();
 
-	if (!username || typeof username !== "string") {
-		return json({ error: "Username is required" }, { status: 400 });
+	if (!credentialId || typeof credentialId !== "string") {
+		return json({ error: "Passkey credential is required" }, { status: 400 });
 	}
 
-	const user = findUserByUsername(username.trim().toLowerCase());
+	const user = findUserByCredentialId(credentialId);
 	if (!user) {
-		return json({ error: "User not found" }, { status: 404 });
+		return json({ error: "No account found for this passkey" }, { status: 404 });
 	}
 
 	const ua = request.headers.get("user-agent") ?? "Unknown";

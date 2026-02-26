@@ -23,6 +23,7 @@ export interface User {
 	email: string;
 	createdAt: string; // ISO 8601
 	avatarUrl: string | null;
+	passkeyCredentialId: string | null; // base64url-encoded WebAuthn credential ID
 }
 
 export const mockUsers: User[] = [
@@ -33,6 +34,7 @@ export const mockUsers: User[] = [
 		email: "alex@example.com",
 		createdAt: "2025-11-01T09:30:00Z",
 		avatarUrl: null,
+		passkeyCredentialId: "dGVzdC1jcmVkZW50aWFsLWFsZXg",
 	},
 	{
 		id: "usr_02",
@@ -41,6 +43,7 @@ export const mockUsers: User[] = [
 		email: "jordan@example.com",
 		createdAt: "2025-12-15T14:20:00Z",
 		avatarUrl: null,
+		passkeyCredentialId: "dGVzdC1jcmVkZW50aWFsLWpvcmRhbg",
 	},
 ];
 
@@ -92,7 +95,7 @@ export const mockSessions: Session[] = [
 // Login Activity (audit log)
 // ---------------------------------------------------------------------------
 
-export type AuthMethod = "passkey" | "qr" | "password";
+export type AuthMethod = "passkey" | "qr";
 
 export interface LoginActivity {
 	id: string;

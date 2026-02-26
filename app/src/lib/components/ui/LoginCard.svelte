@@ -17,15 +17,55 @@
 		errorMsg = null;
 	}
 
+	function bufferToBase64url(buf: ArrayBuffer): string {
+		const bytes = new Uint8Array(buf);
+		let binary = "";
+		for (const b of bytes) binary += String.fromCharCode(b);
+		return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+	}
+
 	async function handleSignup(e: SubmitEvent) {
 		e.preventDefault();
+		if (!username.trim()) return;
 		errorMsg = null;
 		loading = true;
+
 		try {
+			const challenge = crypto.getRandomValues(new Uint8Array(32));
+			const userId = crypto.getRandomValues(new Uint8Array(16));
+
+			const credential = (await navigator.credentials.create({
+				publicKey: {
+					challenge,
+					rp: { name: "Secure Login System", id: window.location.hostname },
+					user: {
+						id: userId,
+						name: username.trim(),
+						displayName: username.trim(),
+					},
+					pubKeyCredParams: [
+						{ alg: -7, type: "public-key" },
+						{ alg: -257, type: "public-key" },
+					],
+					authenticatorSelection: {
+						residentKey: "required",
+						userVerification: "preferred",
+					},
+					timeout: 60000,
+				},
+			})) as PublicKeyCredential | null;
+
+			if (!credential) {
+				errorMsg = "Passkey creation cancelled";
+				return;
+			}
+
+			const credentialId = bufferToBase64url(credential.rawId);
+
 			const res = await fetch("/api/auth/signup", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ username: username.trim() }),
+				body: JSON.stringify({ username: username.trim(), credentialId }),
 			});
 			const data = await res.json();
 			if (!res.ok) {
@@ -33,8 +73,8 @@
 				return;
 			}
 			window.location.href = "/dashboard";
-		} catch {
-			errorMsg = "Network error";
+		} catch (err) {
+			errorMsg = err instanceof Error ? err.message : "Passkey creation failed";
 		} finally {
 			loading = false;
 		}
@@ -44,37 +84,28 @@
 		errorMsg = null;
 		loading = true;
 		try {
-			const credential = await navigator.credentials.get({
+			const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+			const credential = (await navigator.credentials.get({
 				mediation: "optional",
 				publicKey: {
-					challenge: new Uint8Array(32),
-					rpId: typeof window !== "undefined" ? window.location.hostname : "localhost",
+					challenge,
+					rpId: window.location.hostname,
 					userVerification: "preferred",
 				},
-			});
+			})) as PublicKeyCredential | null;
+
 			if (!credential) {
 				errorMsg = "No credential selected";
 				return;
 			}
-			// In a real app, send credential to server for verification.
-			// For this demo, fall through to /api/auth/login with the username prompt.
-			errorMsg = "Passkey received — use Sign Up to create a demo account";
-		} catch (err) {
-			errorMsg = err instanceof Error ? err.message : "Passkey sign-in failed";
-		} finally {
-			loading = false;
-		}
-	}
 
-	async function handleLogin(e: SubmitEvent) {
-		e.preventDefault();
-		errorMsg = null;
-		loading = true;
-		try {
+			const credentialId = bufferToBase64url(credential.rawId);
+
 			const res = await fetch("/api/auth/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ username: username.trim() }),
+				body: JSON.stringify({ credentialId }),
 			});
 			const data = await res.json();
 			if (!res.ok) {
@@ -82,8 +113,8 @@
 				return;
 			}
 			window.location.href = "/dashboard";
-		} catch {
-			errorMsg = "Network error";
+		} catch (err) {
+			errorMsg = err instanceof Error ? err.message : "Passkey sign-in failed";
 		} finally {
 			loading = false;
 		}
@@ -94,7 +125,7 @@
 	<Card.Header class="p-0 pb-1">
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">Welcome</Card.Title>
 		<Card.Description class="text-sm text-neutral-600">
-			{mode === "login" ? "Sign in to your account" : "Create an account with your username"}
+			{mode === "login" ? "Sign in with your passkey" : "Create an account with a passkey"}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="p-0">
@@ -123,7 +154,7 @@
 					<Input
 						id="username"
 						type="text"
-						placeholder="Enter username"
+						placeholder="Choose a username"
 						bind:value={username}
 						required
 						autocomplete="username"
@@ -132,14 +163,15 @@
 				</div>
 				<Button
 					type="submit"
-					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md transition-colors duration-150"
+					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
 					disabled={loading}
 				>
-					{loading ? "Creating account..." : "Sign up"}
+					<Fingerprint class="size-5" />
+					{loading ? "Creating passkey..." : "Create account with passkey"}
 				</Button>
 			</form>
 		{:else}
-			<form onsubmit={handleLogin} class="space-y-4">
+			<div class="space-y-4">
 				<div class="flex gap-3">
 					<Button
 						variant="default"
@@ -158,30 +190,6 @@
 						Sign up
 					</Button>
 				</div>
-				<div class="space-y-2">
-					<Label for="login-username" class="text-neutral-800">Username</Label>
-					<Input
-						id="login-username"
-						type="text"
-						placeholder="Enter username"
-						bind:value={username}
-						required
-						autocomplete="username"
-						class="bg-white border-neutral-300"
-					/>
-				</div>
-				<Button
-					type="submit"
-					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md transition-colors duration-150"
-					disabled={loading}
-				>
-					{loading ? "Signing in..." : "Log in"}
-				</Button>
-				<div class="relative flex items-center gap-3">
-					<div class="flex-1 h-px bg-neutral-300"></div>
-					<span class="text-xs text-neutral-500">or</span>
-					<div class="flex-1 h-px bg-neutral-300"></div>
-				</div>
 				<Button
 					type="button"
 					class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
@@ -191,7 +199,7 @@
 					<Fingerprint class="size-5" />
 					{loading ? "Signing in..." : "Log in with passkey"}
 				</Button>
-			</form>
+			</div>
 		{/if}
 		{#if errorMsg}
 			<p class="text-sm text-red-600 mt-3">{errorMsg}</p>

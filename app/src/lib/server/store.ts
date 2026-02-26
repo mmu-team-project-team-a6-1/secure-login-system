@@ -30,7 +30,7 @@ function isoFuture(hours: number): string {
 // User operations
 // ---------------------------------------------------------------------------
 
-export function createUser(username: string): User {
+export function createUser(username: string, credentialId: string): User {
 	const user: User = {
 		id: uid("usr"),
 		username,
@@ -38,6 +38,7 @@ export function createUser(username: string): User {
 		email: `${username}@example.com`,
 		createdAt: isoNow(),
 		avatarUrl: null,
+		passkeyCredentialId: credentialId,
 	};
 	users.set(user.id, user);
 	return user;
@@ -45,6 +46,10 @@ export function createUser(username: string): User {
 
 export function findUserByUsername(username: string): User | undefined {
 	return [...users.values()].find((u) => u.username === username);
+}
+
+export function findUserByCredentialId(credentialId: string): User | undefined {
+	return [...users.values()].find((u) => u.passkeyCredentialId === credentialId);
 }
 
 // ---------------------------------------------------------------------------
