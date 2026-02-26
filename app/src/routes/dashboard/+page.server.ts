@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	return {
 		user: locals.user,
-		sessions: getSessionsForUser(locals.user.id),
-		activity: getLoginActivityForUser(locals.user.id),
+		sessions: await getSessionsForUser(locals.user.id),
+		activity: await getLoginActivityForUser(locals.user.id),
 	};
 };

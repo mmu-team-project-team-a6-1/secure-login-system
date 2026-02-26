@@ -8,7 +8,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const ua = request.headers.get("user-agent") ?? "Unknown";
 	const geo = lookupGeo(ip);
 
-	const qs = createQRSession(ip, ua, geo);
+	const qs = await createQRSession(ip, ua, geo);
 	return json({
 		sessionId: qs.id,
 		secret: qs.secret,

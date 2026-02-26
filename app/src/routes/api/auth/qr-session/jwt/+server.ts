@@ -17,7 +17,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: "Missing fields" }, { status: 400 });
 	}
 
-	const qs = getQRSession(sessionId);
+	const qs = await getQRSession(sessionId);
 	if (!qs) {
 		return json({ error: "QR session not found" }, { status: 404 });
 	}

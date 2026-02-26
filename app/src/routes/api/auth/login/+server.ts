@@ -10,15 +10,15 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		return json({ error: "Passkey credential is required" }, { status: 400 });
 	}
 
-	const user = findUserByCredentialId(credentialId);
+	const user = await findUserByCredentialId(credentialId);
 	if (!user) {
 		return json({ error: "No account found for this passkey" }, { status: 404 });
 	}
 
 	const ua = request.headers.get("user-agent") ?? "Unknown";
 	const ip = getClientIp(request);
-	const session = createSession(user.id, ua, ip);
-	recordLogin(user.id, "passkey", ua, true);
+	const session = await createSession(user.id, ua, ip);
+	await recordLogin(user.id, "passkey", ua, true);
 
 	cookies.set("session", session.id, {
 		path: "/",

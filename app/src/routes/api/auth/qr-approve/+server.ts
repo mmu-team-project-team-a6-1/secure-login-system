@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "Missing sessionId" }, { status: 400 });
 	}
 
-	const qs = getQRSession(sessionId);
+	const qs = await getQRSession(sessionId);
 	if (!qs) {
 		return json({ error: "QR session not found" }, { status: 404 });
 	}
@@ -21,12 +21,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "QR session is not awaiting approval" }, { status: 410 });
 	}
 
-	const approved = approveQRSession(qs.id, locals.user.id);
+	const approved = await approveQRSession(qs.id, locals.user.id);
 	if (!approved) {
 		return json({ error: "Approval failed" }, { status: 403 });
 	}
 
-	recordLogin(locals.user.id, "qr", qs.desktopUserAgent, true);
+	await recordLogin(locals.user.id, "qr", qs.desktopUserAgent, true);
 
 	return json({ success: true });
 };

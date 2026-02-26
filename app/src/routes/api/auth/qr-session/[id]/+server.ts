@@ -1,17 +1,17 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { getQRSession, users, createSession } from "$lib/server/store";
+import { getQRSession, getUserById, createSession } from "$lib/server/store";
 
 export const GET: RequestHandler = async ({ params, cookies }) => {
-	const qs = getQRSession(params.id);
+	const qs = await getQRSession(params.id);
 	if (!qs) {
 		return json({ error: "QR session not found" }, { status: 404 });
 	}
 
 	if (qs.status === "authenticated" && qs.authorizedBy) {
-		const user = users.get(qs.authorizedBy);
+		const user = await getUserById(qs.authorizedBy);
 		if (user) {
-			const session = createSession(user.id, qs.desktopUserAgent, qs.desktopIp);
+			const session = await createSession(user.id, qs.desktopUserAgent, qs.desktopIp);
 			cookies.set("session", session.id, {
 				path: "/",
 				httpOnly: true,

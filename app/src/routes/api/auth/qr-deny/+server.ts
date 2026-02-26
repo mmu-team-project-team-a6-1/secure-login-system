@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "Missing sessionId" }, { status: 400 });
 	}
 
-	const qs = getQRSession(sessionId);
+	const qs = await getQRSession(sessionId);
 	if (!qs) {
 		return json({ error: "QR session not found" }, { status: 404 });
 	}
@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "QR session is not awaiting approval" }, { status: 410 });
 	}
 
-	const denied = denyQRSession(qs.id, locals.user.id);
+	const denied = await denyQRSession(qs.id, locals.user.id);
 	if (!denied) {
 		return json({ error: "Denial failed" }, { status: 403 });
 	}

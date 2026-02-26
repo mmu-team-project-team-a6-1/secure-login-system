@@ -76,7 +76,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 		sessionId = sid;
 
-		const qs = getQRSession(sessionId);
+		const qs = await getQRSession(sessionId);
 		if (!qs) {
 			return json({ error: "QR session not found" }, { status: 404 });
 		}
@@ -95,7 +95,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 	}
 
-	const qs = getQRSession(sessionId);
+	const qs = await getQRSession(sessionId);
 	if (!qs) {
 		return json({ error: "QR session not found" }, { status: 404 });
 	}
@@ -103,7 +103,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "QR session already used or expired" }, { status: 410 });
 	}
 
-	scanQRSession(qs.id, locals.user.id);
+	await scanQRSession(qs.id, locals.user.id);
 
 	const geo = qs.desktopGeo;
 	const location = geo ? formatLocation(geo) : null;
