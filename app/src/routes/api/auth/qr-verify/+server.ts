@@ -4,6 +4,33 @@ import { getQRSession, scanQRSession } from "$lib/server/store";
 import { verifyToken } from "$lib/utils/totp";
 import { verifyQrJwt } from "$lib/server/qr-jwt";
 
+/** User-friendly country display (geoip returns ISO codes). */
+const COUNTRY_DISPLAY: Record<string, string> = {
+	GB: "UK",
+	US: "USA",
+};
+
+/** Optional region display names (geoip may return codes like ENG). */
+const REGION_DISPLAY: Record<string, string> = {
+	ENG: "England",
+	SCT: "Scotland",
+	NIR: "Northern Ireland",
+	WLS: "Wales",
+};
+
+function formatLocation(geo: { city?: string | null; region?: string | null; country?: string | null }): string | null {
+	const city = geo.city?.trim() || null;
+	const region = (geo.region?.trim() && (REGION_DISPLAY[geo.region] ?? geo.region)) || null;
+	const country = (geo.country?.trim() && (COUNTRY_DISPLAY[geo.country] ?? geo.country)) || null;
+
+	// Prefer: "City, Region" then "City, Country" then "Region" then "Country"
+	if (city && region) return `${city}, ${region}`;
+	if (city && country) return `${city}, ${country}`;
+	if (region) return region;
+	if (country) return country;
+	return null;
+}
+
 function parseUserAgent(ua: string): string {
 	let browser = "Unknown browser";
 	let os = "Unknown OS";
@@ -79,11 +106,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	scanQRSession(qs.id, locals.user.id);
 
 	const geo = qs.desktopGeo;
-	let location: string | null = null;
-	if (geo) {
-		const parts = [geo.city, geo.region, geo.country].filter(Boolean);
-		location = parts.length > 0 ? parts.join(", ") : null;
-	}
+	const location = geo ? formatLocation(geo) : null;
 
 	return json({
 		success: true,

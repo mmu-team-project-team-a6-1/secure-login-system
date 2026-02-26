@@ -616,18 +616,16 @@
 				class="absolute inset-0 z-10 pointer-events-none scanner-outside-blur"
 				style="mask: url(#scanner-outside-mask); -webkit-mask: url(#scanner-outside-mask); mask-size: 100% 100%; -webkit-mask-size: 100% 100%;"
 			></div>
-			<!-- Center box: border + optional light blur when no QR -->
+			<!-- Center box: border only (camera feed inside box is never blurred) -->
 			<div
 				class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-10 pointer-events-none rounded-3xl box-border scan-box-border"
 				class:scan-box-glow={(status === "scanning" && qrInFrame) || status === "verifying"}
 				class:scan-box-success={status === "verified"}
 				class:scan-box-error={status === "error"}
 			>
-			<div
-				class="absolute inset-0 rounded-3xl scan-box-inner-blur transition-[filter] duration-200"
-				class:scan-box-blur-on={status === "scanning" && !qrInFrame}
-				style="-webkit-backdrop-filter: {status === 'scanning' && !qrInFrame ? 'blur(4px)' : 'none'}; backdrop-filter: {status === 'scanning' && !qrInFrame ? 'blur(4px)' : 'none'};"
-			></div>
+				<div
+					class="absolute inset-0 rounded-3xl scan-box-inner-blur"
+				></div>
 			</div>
 		</div>
 
