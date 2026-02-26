@@ -2,6 +2,7 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { getQRSession, scanQRSession } from "$lib/server/store";
 import { verifyToken } from "$lib/utils/totp";
+import { verifyQrJwt } from "$lib/server/qr-jwt";
 
 function parseUserAgent(ua: string): string {
 	let browser = "Unknown browser";
@@ -25,10 +26,46 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "Not authenticated" }, { status: 401 });
 	}
 
-	const { sessionId, token, timestamp } = await request.json();
+	let body: { jwt?: string; sessionId?: string; token?: string; timestamp?: number };
+	try {
+		body = await request.json();
+	} catch {
+		return json({ error: "Invalid JSON" }, { status: 400 });
+	}
 
-	if (!sessionId || !token || !timestamp) {
-		return json({ error: "Missing fields" }, { status: 400 });
+	let sessionId: string;
+
+	if (body.jwt && typeof body.jwt === "string") {
+		// JWT path: verify with fixed HS256 only (never use payload to decide algorithm)
+		const payload = await verifyQrJwt(body.jwt);
+		if (!payload) {
+			return json({ error: "Invalid or expired QR code" }, { status: 403 });
+		}
+		sessionId = payload.sessionId;
+	} else {
+		const { sessionId: sid, token, timestamp } = body;
+		if (!sid || !token || !timestamp) {
+			return json({ error: "Missing fields" }, { status: 400 });
+		}
+		sessionId = sid;
+
+		const qs = getQRSession(sessionId);
+		if (!qs) {
+			return json({ error: "QR session not found" }, { status: 404 });
+		}
+		if (qs.status !== "pending") {
+			return json({ error: "QR session already used or expired" }, { status: 410 });
+		}
+
+		const serverNow = Math.floor(Date.now() / 1000);
+		if (Math.abs(serverNow - timestamp) > 5) {
+			return json({ error: "Timestamp too far from server time" }, { status: 400 });
+		}
+
+		const valid = await verifyToken(qs.secret, token, serverNow, 2);
+		if (!valid) {
+			return json({ error: "Invalid token" }, { status: 403 });
+		}
 	}
 
 	const qs = getQRSession(sessionId);
@@ -37,16 +74,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 	if (qs.status !== "pending") {
 		return json({ error: "QR session already used or expired" }, { status: 410 });
-	}
-
-	const serverNow = Math.floor(Date.now() / 1000);
-	if (Math.abs(serverNow - timestamp) > 5) {
-		return json({ error: "Timestamp too far from server time" }, { status: 400 });
-	}
-
-	const valid = await verifyToken(qs.secret, token, serverNow, 2);
-	if (!valid) {
-		return json({ error: "Invalid token" }, { status: 403 });
 	}
 
 	scanQRSession(qs.id, locals.user.id);
@@ -60,6 +87,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	return json({
 		success: true,
+		sessionId: qs.id,
 		desktop: {
 			device: parseUserAgent(qs.desktopUserAgent),
 			ip: qs.desktopIp,

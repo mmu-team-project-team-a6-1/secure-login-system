@@ -37,14 +37,25 @@
 		if (!secret || !sessionId) return;
 		const t = nowEpochSeconds();
 		const token = await generateToken(secret, t);
-		const payload = `sls:${sessionId}:${token}:${t}`;
-		const next = activeSlot === 0 ? 1 : 0;
-		qrImages[next] = await QRCode.toDataURL(payload, {
-			width: 192,
-			margin: 1,
-			errorCorrectionLevel: "L",
-		});
-		activeSlot = next;
+		try {
+			const res = await fetch("/api/auth/qr-session/jwt", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ sessionId, token, timestamp: t }),
+			});
+			if (!res.ok) return;
+			const data = await res.json();
+			const payload = `teama61qrlogin://${data.jwt}`;
+			const next = activeSlot === 0 ? 1 : 0;
+			qrImages[next] = await QRCode.toDataURL(payload, {
+				width: 192,
+				margin: 1,
+				errorCorrectionLevel: "L",
+			});
+			activeSlot = next;
+		} catch {
+			/* keep previous QR for another second */
+		}
 	}
 
 	function startRotation() {

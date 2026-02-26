@@ -137,16 +137,20 @@
 	async function onScanSuccess(decoded: string) {
 		if (status !== "scanning") return;
 
-		const parts = decoded.split(":");
-		if (parts.length !== 4 || parts[0] !== "sls") {
+		const scheme = "teama61qrlogin://";
+		if (!decoded.startsWith(scheme)) {
 			status = "error";
 			errorMsg = "Not a valid login QR code";
 			resetAfterDelay();
 			return;
 		}
-
-		const [, sessionId, token, tsStr] = parts;
-		const timestamp = parseInt(tsStr, 10);
+		const jwt = decoded.slice(scheme.length).trim();
+		if (!jwt) {
+			status = "error";
+			errorMsg = "Not a valid login QR code";
+			resetAfterDelay();
+			return;
+		}
 
 		status = "verifying";
 
@@ -154,13 +158,13 @@
 			const res = await fetch("/api/auth/qr-verify", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ sessionId, token, timestamp }),
+				body: JSON.stringify({ jwt }),
 			});
 
 			if (res.ok) {
 				const data = await res.json();
 				stopCamera();
-				pendingSessionId = sessionId;
+				pendingSessionId = data.sessionId ?? null;
 				desktopInfo = data.desktop;
 				status = "approving";
 			} else {
