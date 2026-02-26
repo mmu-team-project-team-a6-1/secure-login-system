@@ -1,6 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { createUser, findUserByUsername, createSession, recordLogin } from "$lib/server/store";
+import { getClientIp } from "$lib/server/ip";
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const { username, credentialId } = await request.json();
@@ -21,7 +22,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	const user = createUser(clean, credentialId);
 	const ua = request.headers.get("user-agent") ?? "Unknown";
-	const session = createSession(user.id, ua, "127.0.0.1");
+	const ip = getClientIp(request);
+	const session = createSession(user.id, ua, ip);
 	recordLogin(user.id, "passkey", ua, true);
 
 	cookies.set("session", session.id, {

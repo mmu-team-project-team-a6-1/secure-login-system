@@ -145,13 +145,23 @@ export const mockLoginActivity: LoginActivity[] = [
 // QR Sessions (temporary handshake for cross-device login)
 // ---------------------------------------------------------------------------
 
-export type QRSessionStatus = "pending" | "authenticated" | "expired";
+export type QRSessionStatus = "pending" | "scanned" | "authenticated" | "expired";
+
+export interface QRSessionGeo {
+	city: string | null;
+	country: string | null;
+	region: string | null;
+	ll: [number, number] | null;
+}
 
 export interface QRSession {
 	id: string;
 	secret: string; // base64url-encoded HMAC secret
 	status: QRSessionStatus;
 	authorizedBy: string | null; // userId who scanned the code
+	desktopIp: string;
+	desktopUserAgent: string;
+	desktopGeo: QRSessionGeo | null;
 	createdAt: string;
 	expiresAt: string;
 }
@@ -162,6 +172,9 @@ export const mockQRSessions: QRSession[] = [
 		secret: "dGhpcyBpcyBhIGRlbW8gc2VjcmV0",
 		status: "authenticated",
 		authorizedBy: "usr_01",
+		desktopIp: "82.132.214.97",
+		desktopUserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/131.0",
+		desktopGeo: { city: "Manchester", country: "GB", region: "ENG", ll: [53.4808, -2.2426] },
 		createdAt: "2026-02-25T19:44:50Z",
 		expiresAt: "2026-02-25T19:49:50Z",
 	},
@@ -170,6 +183,9 @@ export const mockQRSessions: QRSession[] = [
 		secret: "YW5vdGhlciBkZW1vIHNlY3JldA",
 		status: "expired",
 		authorizedBy: null,
+		desktopIp: "Unknown",
+		desktopUserAgent: "Unknown",
+		desktopGeo: null,
 		createdAt: "2026-02-24T10:00:00Z",
 		expiresAt: "2026-02-24T10:05:00Z",
 	},

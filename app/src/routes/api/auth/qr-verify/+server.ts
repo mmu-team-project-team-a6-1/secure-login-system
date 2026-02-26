@@ -1,7 +1,24 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { getQRSession, authenticateQRSession, recordLogin } from "$lib/server/store";
+import { getQRSession, scanQRSession } from "$lib/server/store";
 import { verifyToken } from "$lib/utils/totp";
+
+function parseUserAgent(ua: string): string {
+	let browser = "Unknown browser";
+	let os = "Unknown OS";
+
+	if (/Edg\//i.test(ua)) browser = "Edge";
+	else if (/Chrome\//i.test(ua)) browser = "Chrome";
+	else if (/Firefox\//i.test(ua)) browser = "Firefox";
+	else if (/Safari\//i.test(ua)) browser = "Safari";
+
+	if (/Windows/i.test(ua)) os = "Windows";
+	else if (/Mac OS X|macOS/i.test(ua)) os = "macOS";
+	else if (/Linux/i.test(ua)) os = "Linux";
+	else if (/CrOS/i.test(ua)) os = "ChromeOS";
+
+	return `${browser} on ${os}`;
+}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
@@ -32,8 +49,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "Invalid token" }, { status: 403 });
 	}
 
-	authenticateQRSession(qs.id, locals.user.id);
-	recordLogin(locals.user.id, "qr", "QR Scanner", true);
+	scanQRSession(qs.id, locals.user.id);
 
-	return json({ success: true });
+	const geo = qs.desktopGeo;
+	let location: string | null = null;
+	if (geo) {
+		const parts = [geo.city, geo.region, geo.country].filter(Boolean);
+		location = parts.length > 0 ? parts.join(", ") : null;
+	}
+
+	return json({
+		success: true,
+		desktop: {
+			device: parseUserAgent(qs.desktopUserAgent),
+			ip: qs.desktopIp,
+			location,
+			geo,
+		},
+	});
 };

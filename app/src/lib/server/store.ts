@@ -1,5 +1,12 @@
 import crypto from "node:crypto";
-import type { User, Session, QRSession, LoginActivity, AuthMethod } from "$lib/data/example-data";
+import type {
+	User,
+	Session,
+	QRSession,
+	QRSessionGeo,
+	LoginActivity,
+	AuthMethod,
+} from "$lib/data/example-data";
 
 // ---------------------------------------------------------------------------
 // In-memory stores – will be replaced by Appwrite collections
@@ -86,13 +93,20 @@ export function getSession(id: string): Session | undefined {
 
 const QR_TTL_MINUTES = 5;
 
-export function createQRSession(): QRSession {
+export function createQRSession(
+	desktopIp: string,
+	desktopUserAgent: string,
+	desktopGeo: QRSessionGeo | null,
+): QRSession {
 	const secret = crypto.randomBytes(32).toString("base64url");
 	const qs: QRSession = {
 		id: uid("qr"),
 		secret,
 		status: "pending",
 		authorizedBy: null,
+		desktopIp,
+		desktopUserAgent,
+		desktopGeo,
 		createdAt: isoNow(),
 		expiresAt: new Date(Date.now() + QR_TTL_MINUTES * 60_000).toISOString(),
 	};
@@ -103,17 +117,25 @@ export function createQRSession(): QRSession {
 export function getQRSession(id: string): QRSession | undefined {
 	const qs = qrSessions.get(id);
 	if (!qs) return undefined;
-	if (qs.status === "pending" && new Date(qs.expiresAt) < new Date()) {
+	if ((qs.status === "pending" || qs.status === "scanned") && new Date(qs.expiresAt) < new Date()) {
 		qs.status = "expired";
 	}
 	return qs;
 }
 
-export function authenticateQRSession(id: string, userId: string): boolean {
+export function scanQRSession(id: string, userId: string): boolean {
 	const qs = getQRSession(id);
 	if (!qs || qs.status !== "pending") return false;
-	qs.status = "authenticated";
+	qs.status = "scanned";
 	qs.authorizedBy = userId;
+	return true;
+}
+
+export function approveQRSession(id: string, userId: string): boolean {
+	const qs = getQRSession(id);
+	if (!qs || qs.status !== "scanned") return false;
+	if (qs.authorizedBy !== userId) return false;
+	qs.status = "authenticated";
 	return true;
 }
 

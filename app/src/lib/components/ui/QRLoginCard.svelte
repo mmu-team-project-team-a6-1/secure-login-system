@@ -3,13 +3,13 @@
 	import QRCode from "qrcode";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import { generateToken, nowEpochSeconds } from "$lib/utils/totp";
-	import { RefreshCw } from "@lucide/svelte";
+	import { RefreshCw, Loader2, ShieldCheck } from "@lucide/svelte";
 
 	let sessionId = $state<string | null>(null);
 	let secret = $state<string | null>(null);
 	let qrImages = $state<[string | null, string | null]>([null, null]);
 	let activeSlot = $state(0);
-	let status = $state<"loading" | "active" | "authenticated" | "expired">("loading");
+	let status = $state<"loading" | "active" | "scanned" | "authenticated" | "expired">("loading");
 	let error = $state<string | null>(null);
 
 	let rotateTimer: ReturnType<typeof setInterval> | undefined;
@@ -68,7 +68,14 @@
 					status = "authenticated";
 					stopRotation();
 					stopPolling();
-					window.location.href = "/dashboard";
+					setTimeout(() => {
+						window.location.href = "/dashboard";
+					}, 800);
+				} else if (data.status === "scanned") {
+					if (status !== "scanned") {
+						status = "scanned";
+						stopRotation();
+					}
 				} else if (data.status === "expired") {
 					status = "expired";
 					stopRotation();
@@ -98,7 +105,13 @@
 			Log in with mobile app
 		</Card.Title>
 		<Card.Description class="text-sm text-neutral-600">
-			Scan the QR code with your mobile app to sign in
+			{#if status === "scanned"}
+				Confirm the login on your mobile device
+			{:else if status === "authenticated"}
+				Login approved — redirecting...
+			{:else}
+				Scan the QR code with your mobile app to sign in
+			{/if}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="p-0 flex flex-col items-center justify-center gap-4">
@@ -118,8 +131,21 @@
 						Refresh
 					</button>
 				</div>
+			{:else if status === "scanned"}
+				<div class="flex flex-col items-center gap-3">
+					<div class="relative">
+						<div class="w-12 h-12 rounded-full border-[3px] border-neutral-200 border-t-[#4F83C2] animate-spin"></div>
+					</div>
+					<div class="flex flex-col items-center gap-1">
+						<span class="text-neutral-700 text-xs font-medium">Waiting for approval</span>
+						<span class="text-neutral-400 text-[10px]">Check your mobile device</span>
+					</div>
+				</div>
 			{:else if status === "authenticated"}
-				<span class="text-green-600 text-sm font-medium">Authenticated!</span>
+				<div class="flex flex-col items-center gap-2">
+					<ShieldCheck class="size-10 text-green-500" />
+					<span class="text-green-600 text-sm font-medium">Approved!</span>
+				</div>
 			{:else}
 				{#each [0, 1] as slot}
 					{#if qrImages[slot]}

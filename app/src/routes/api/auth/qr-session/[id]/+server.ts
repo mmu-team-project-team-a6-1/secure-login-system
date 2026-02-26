@@ -11,7 +11,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	if (qs.status === "authenticated" && qs.authorizedBy) {
 		const user = users.get(qs.authorizedBy);
 		if (user) {
-			const session = createSession(user.id, "QR Login", "127.0.0.1");
+			const session = createSession(user.id, qs.desktopUserAgent, qs.desktopIp);
 			cookies.set("session", session.id, {
 				path: "/",
 				httpOnly: true,
