@@ -36,13 +36,6 @@
 	const THUMB_SIZE = 48;
 	const THUMB_PAD = 4;
 
-	// Deterministic scattered positions for success particles (10–90% range)
-	const PARTICLE_COUNT = 48;
-	const scatteredPositions = Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-		x: 10 + ((i * 37) % 81),
-		y: 10 + ((i * 53) % 81),
-	}));
-
 	$effect(() => {
 		if (status === "approving") {
 			countdown = 3;
@@ -301,108 +294,15 @@
 		border-color: rgb(239, 68, 68);
 		box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
 	}
-	.scan-box-inner-blur {
-		background: rgba(255, 255, 255, 0.03);
-	}
 	.approval-sheet {
 		transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
 	}
 	.approval-sheet-closing {
 		transform: translateY(100vh);
 	}
-	.success-checkmark-path {
-		stroke-dasharray: 60;
-		stroke-dashoffset: 60;
-		animation: success-check-draw 0.5s ease-out 0.1s forwards;
-	}
-	@keyframes success-check-draw {
-		to {
-			stroke-dashoffset: 0;
-		}
-	}
-	.success-particles {
-		animation: success-particles-fade-in 0.4s ease-out;
-	}
-	.success-particle {
-		animation: success-particle-drift 4s ease-in-out infinite;
-	}
-	.success-particle-burst {
-		animation: success-particle-burst 1.2s ease-out forwards, success-particle-drift 4s ease-in-out 1s infinite;
-		opacity: 0;
-	}
-	/* Mobile: scatter from center to final position in ~150ms, then drift */
-	@media (max-width: 768px) {
-		.success-particle-burst {
-			animation: success-particle-scatter 0.15s ease-out forwards,
-				success-particle-drift-scattered 4s ease-in-out 0.15s infinite;
-			opacity: 0;
-		}
-	}
 	@media (prefers-reduced-motion: reduce) {
-		.success-particle,
-		.success-particle-burst {
-			animation: none;
-			opacity: 0.6;
-		}
 		.approval-sheet-closing {
 			transition-duration: 0.2s;
-		}
-	}
-	@keyframes success-particles-fade-in {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-	@keyframes success-particle-burst {
-		0% {
-			transform: translate(0, 0) scale(0.2);
-			opacity: 0;
-		}
-		50% {
-			opacity: 0.9;
-		}
-		100% {
-			transform: translate(0, -70px) scale(1);
-			opacity: 0.55;
-		}
-	}
-	@keyframes success-particle-scatter {
-		0% {
-			transform: translate(-50%, -50%) scale(0.2);
-			opacity: 0;
-		}
-		100% {
-			transform: translate(calc(var(--tx) * 1% - 50%), calc(var(--ty) * 1% - 50%)) scale(1);
-			opacity: 0.6;
-		}
-	}
-	@keyframes success-particle-drift-scattered {
-		0%,
-		100% {
-			transform: translate(calc(var(--tx) * 1% - 50%), calc(var(--ty) * 1% - 50%)) scale(1);
-			opacity: 0.5;
-		}
-		50% {
-			transform: translate(
-					calc(var(--tx) * 1% - 50% + 4px),
-					calc(var(--ty) * 1% - 50% - 12px)
-				)
-				scale(1.15);
-			opacity: 0.85;
-		}
-	}
-	@keyframes success-particle-drift {
-		0%,
-		100% {
-			transform: translate(0, 0) scale(1);
-			opacity: 0.5;
-		}
-		50% {
-			transform: translate(4px, -12px) scale(1.15);
-			opacity: 0.85;
 		}
 	}
 </style>
@@ -423,16 +323,6 @@
 				style="background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(0, 168, 142, 0.35) 0%, rgba(111, 207, 151, 0.2) 40%, transparent 70%);"
 				aria-hidden="true"
 			></div>
-			<!-- Active green particles (shoot + drift; on mobile: scatter from center) -->
-			<div class="success-particles absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-				{#each Array(PARTICLE_COUNT) as _, i}
-					{@const pos = scatteredPositions[i]}
-					<span
-						class="success-particle success-particle-burst absolute rounded-full bg-emerald-400/50"
-						style="width: {3 + (i % 6)}px; height: {3 + (i % 6)}px; left: 50%; top: 50%; --tx: {pos.x}; --ty: {pos.y}; animation-delay: {(i % 20) * 0.02}s;"
-					></span>
-				{/each}
-			</div>
 		{/if}
 		<div class="relative z-10 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-3">
 			<h2 class="text-lg font-semibold text-white">
@@ -445,7 +335,7 @@
 			{#if status !== "success"}
 				<button
 					onclick={denyLogin}
-					class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 transition-transform duration-150"
+					class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center active:scale-90 transition-transform duration-150"
 					style="-webkit-backdrop-filter: blur(24px);"
 					aria-label="Deny and close"
 				>
@@ -459,13 +349,13 @@
 				<div class="flex flex-col items-center gap-3">
 					<div class="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
 						<svg class="success-checkmark w-10 h-10 text-green-400" viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-							<path class="success-checkmark-path" d="M14 27 l8 8 16 -20" />
+							<path d="M14 27 l8 8 16 -20" />
 						</svg>
 					</div>
 					<p class="text-green-400 text-base font-medium">Login authorized!</p>
 				</div>
 			{:else}
-				<div class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center" style="-webkit-backdrop-filter: blur(24px);">
+				<div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center" style="-webkit-backdrop-filter: blur(24px);">
 					<ShieldCheck class="size-8 text-white" />
 				</div>
 
@@ -474,7 +364,7 @@
 				</p>
 
 				{#if desktopInfo}
-					<div class="w-full max-w-xs rounded-2xl bg-white/15 backdrop-blur-xl border border-white/20 overflow-hidden" style="-webkit-backdrop-filter: blur(24px);">
+					<div class="w-full max-w-xs rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 overflow-hidden" style="-webkit-backdrop-filter: blur(24px);">
 						<div class="px-5 py-3.5 flex items-center gap-3 border-b border-white/10">
 							<Monitor class="size-4.5 text-white/60 flex-shrink-0" />
 							<div class="min-w-0">
@@ -516,7 +406,7 @@
 				class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-4 px-6 flex flex-col gap-3"
 			>
 			{#if status === "approving-loading"}
-				<div class="w-full h-14 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center gap-2" style="-webkit-backdrop-filter: blur(24px);">
+				<div class="w-full h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center gap-2" style="-webkit-backdrop-filter: blur(24px);">
 					<Loader2 class="size-5 text-white animate-spin" />
 					<span class="text-white/70 text-sm font-medium">Approving...</span>
 				</div>
@@ -524,8 +414,8 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={trackEl}
-					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden backdrop-blur-xl border border-white/20 {approvalReady ? 'bg-white/20' : 'bg-white/10'}"
-					style="transition: background-color 0.3s; -webkit-backdrop-filter: blur(24px);"
+					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden backdrop-blur-xl border border-white/15 bg-white/10"
+					style="-webkit-backdrop-filter: blur(24px);"
 				>
 					<span
 						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 {approvalReady ? 'text-white/50' : 'text-white/30'}"
@@ -540,11 +430,11 @@
 					</span>
 					<!-- Glass sheet fill (rounded rect dragged by thumb) -->
 					<div
-						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/20 border border-white/20 border-r-0"
+						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/10 border border-white/15 border-r-0"
 						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 					></div>
 					<div
-						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] {approvalReady ? 'bg-white shadow-lg' : 'bg-white/20'}"
+						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] {approvalReady ? 'bg-white shadow-lg' : 'bg-white/10'}"
 						style="transform: translateX({sliderX}px);
 							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), background-color 0.3s'};"
 						onpointerdown={onSliderPointerDown}
@@ -565,7 +455,7 @@
 				<button
 					onclick={denyLogin}
 					disabled={status === "approving-loading"}
-					class="w-full py-3.5 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/20 text-white font-medium text-sm
+					class="w-full py-3.5 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 text-white font-medium text-sm
 						   active:scale-[0.98] transition-all duration-150 disabled:opacity-40"
 					style="-webkit-backdrop-filter: blur(24px);"
 				>
@@ -586,7 +476,7 @@
 			<h2 class="text-lg font-semibold text-white">Scan QR Code</h2>
 			<button
 				onclick={handleClose}
-				class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 transition-transform duration-150"
+				class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center active:scale-90 transition-transform duration-150"
 				style="-webkit-backdrop-filter: blur(24px);"
 				aria-label="Close scanner"
 			>
@@ -622,15 +512,11 @@
 				class:scan-box-glow={(status === "scanning" && qrInFrame) || status === "verifying"}
 				class:scan-box-success={status === "verified"}
 				class:scan-box-error={status === "error"}
-			>
-				<div
-					class="absolute inset-0 rounded-3xl scan-box-inner-blur"
-				></div>
-			</div>
+			></div>
 		</div>
 
 		<div
-			class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-6 px-6 flex flex-col items-center gap-3 bg-black/40 backdrop-blur-xl border-t border-white/10"
+			class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-6 px-6 flex flex-col items-center gap-3 bg-black/30 backdrop-blur-xl border-t border-white/10"
 			style="-webkit-backdrop-filter: blur(24px); transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);"
 			class:translate-y-0={visible}
 			class:translate-y-full={!visible}
