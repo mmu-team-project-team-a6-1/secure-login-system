@@ -300,6 +300,40 @@
 			transition-duration: 0.2s;
 		}
 	}
+
+	/* Success screen: checkmark draw-in */
+	.success-checkmark-path {
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		animation: checkmark-draw 0.45s ease-out forwards;
+	}
+	@keyframes checkmark-draw {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+
+	/* Success screen: icon scale-in */
+	.success-icon-wrap {
+		transform: scale(0.9);
+		opacity: 0.7;
+		animation: success-scale-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+	}
+	@keyframes success-scale-in {
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.success-checkmark-path {
+			animation-duration: 0.08s;
+		}
+		.success-icon-wrap {
+			animation-duration: 0.08s;
+		}
+	}
 </style>
 
 {#if status === "approving" || status === "approving-loading" || status === "success"}
@@ -312,18 +346,16 @@
 		style="transition: opacity 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);"
 	>
 		{#if status === "success"}
-			<!-- Ambient green glow (Kaspersky / security theme) -->
+			<!-- Ambient green glow (softer, slightly expanded) -->
 			<div
 				class="absolute inset-0 z-0 opacity-80"
-				style="background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(0, 168, 142, 0.35) 0%, rgba(111, 207, 151, 0.2) 40%, transparent 70%);"
+				style="background: radial-gradient(ellipse 90% 80% at 50% 45%, rgba(0, 168, 142, 0.28) 0%, rgba(111, 207, 151, 0.16) 45%, transparent 72%);"
 				aria-hidden="true"
 			></div>
 		{/if}
 		<div class="relative z-10 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-3">
 			<h2 class="text-lg font-semibold text-white">
-				{#if status === "success"}
-					Login Approved
-				{:else}
+				{#if status !== "success"}
 					Approve Login
 				{/if}
 			</h2>
@@ -341,13 +373,16 @@
 
 		<div class="flex-1 flex flex-col items-center justify-center px-8 gap-6">
 			{#if status === "success"}
-				<div class="flex flex-col items-center gap-3">
-					<div class="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-						<svg class="success-checkmark w-10 h-10 text-green-400" viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M14 27 l8 8 16 -20" />
+				<div class="flex flex-col items-center gap-4">
+					<div class="success-icon-wrap w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_0_1px_rgba(34,197,94,0.2),0_0_24px_rgba(34,197,94,0.25)]">
+						<svg class="success-checkmark w-12 h-12 text-green-400" viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+							<path class="success-checkmark-path" pathLength="1" d="M14 27 l8 8 16 -20" />
 						</svg>
 					</div>
-					<p class="text-green-400 text-base font-medium">Login authorized!</p>
+					<div class="flex flex-col items-center gap-1 text-center">
+						<p class="text-green-400 text-xl font-semibold">Login authorized</p>
+						<p class="text-white/50 text-sm">You can close this screen</p>
+					</div>
 				</div>
 			{:else}
 				<div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center" style="-webkit-backdrop-filter: blur(24px);">
@@ -419,23 +454,21 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={trackEl}
-					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden liquid-glass border border-white/15 bg-white/10"
-					style="-webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);"
+					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden bg-neutral-800 border border-neutral-600"
 				>
 					<span
-						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-white/50"
+						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-neutral-400"
 					>
 						Slide to approve
 					</span>
-					<!-- Glass sheet fill (fixed glass look, width reflects progress) -->
+					<!-- Fill bar (width reflects progress) -->
 					<div
-						class="liquid-glass liquid-glass-filter absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/15 border border-white/10 border-r-0"
-						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
+						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-neutral-600"
+						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 					></div>
 					<div
-						class="liquid-glass liquid-glass-filter absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white/20 border border-white/15"
+						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-md"
 						style="transform: translateX({sliderX}px);
-							   -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
 							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 						onpointerdown={onSliderPointerDown}
 						onpointermove={onSliderPointerMove}
@@ -448,7 +481,7 @@
 						aria-label="Slide to approve login"
 						tabindex={0}
 					>
-						<ChevronRight class="size-5 text-white/90" />
+						<ChevronRight class="size-5" />
 					</div>
 				</div>
 			{/if}
