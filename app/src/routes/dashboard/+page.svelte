@@ -60,7 +60,7 @@
 			</div>
 			<button
 				onclick={logout}
-				class="p-2.5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] active:scale-95 transition-transform duration-150"
+				class="p-2.5 rounded-full glass-panel border border-[var(--glass-border)] active:scale-95 transition-transform duration-150"
 				aria-label="Log out"
 			>
 				<LogOut class="size-5 text-neutral-600" />
@@ -74,9 +74,9 @@
 		{#if isMobile}
 			<button
 				onclick={() => (scannerOpen = true)}
-				class="w-full bg-[#111111] text-white rounded-[20px] p-5 flex items-center gap-4
+				class="w-full bg-[#111111] text-white rounded-2xl p-5 flex items-center gap-4
 					   active:scale-[0.98] transition-transform duration-150
-					   shadow-[0_2px_12px_rgba(0,0,0,0.12)]"
+					   shadow-[var(--glass-shadow)]"
 				style="transition: transform 0.2s cubic-bezier(0.2,0.9,0.3,1);"
 			>
 				<div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
@@ -98,7 +98,7 @@
 					{#each data.sessions as session}
 						{@const Icon = deviceIcon(session.deviceInfo)}
 						<div class="flex items-center gap-3">
-							<div class="w-9 h-9 rounded-xl bg-[#F2F2F7] flex items-center justify-center flex-shrink-0">
+							<div class="w-9 h-9 rounded-lg bg-[var(--glass-bg)]/60 border border-[var(--glass-border)] flex items-center justify-center flex-shrink-0">
 								<Icon class="size-4.5 text-neutral-600" />
 							</div>
 							<div class="flex-1 min-w-0">
@@ -121,7 +121,7 @@
 					{#each data.activity as entry}
 						<div class="flex items-center gap-3">
 							<div
-								class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+								class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-[var(--glass-border)]"
 								class:bg-green-50={entry.success}
 								class:bg-red-50={!entry.success}
 							>

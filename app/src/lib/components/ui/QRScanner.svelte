@@ -229,6 +229,39 @@
 	}
 </script>
 
+<style>
+	.success-particles {
+		animation: success-particles-fade-in 0.5s ease-out;
+	}
+	.success-particle {
+		animation: success-particle-float 6s ease-in-out infinite;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.success-particle {
+			animation: none;
+		}
+	}
+	@keyframes success-particles-fade-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	@keyframes success-particle-float {
+		0%,
+		100% {
+			transform: translate(0, 0) scale(1);
+			opacity: 0.4;
+		}
+		50% {
+			transform: translate(2px, -8px) scale(1.1);
+			opacity: 0.7;
+		}
+	}
+</style>
+
 {#if status === "approving" || status === "approving-loading" || status === "success"}
 	<!-- Approval screen (full-screen, replaces camera) -->
 	<div
@@ -237,6 +270,23 @@
 		class:opacity-100={visible}
 		style="transition: opacity 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);"
 	>
+		{#if status === "success"}
+			<!-- Ambient green glow (Kaspersky / security theme) -->
+			<div
+				class="absolute inset-0 z-0 opacity-80"
+				style="background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(0, 168, 142, 0.35) 0%, rgba(111, 207, 151, 0.2) 40%, transparent 70%);"
+				aria-hidden="true"
+			></div>
+			<!-- Soft green particles -->
+			<div class="success-particles absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+				{#each Array(28) as _, i}
+					<span
+						class="success-particle absolute rounded-full bg-emerald-400/40"
+						style="width: {4 + (i % 5)}px; height: {4 + (i % 5)}px; left: {(i * 13.7) % 100}%; top: {(i * 17 + 10) % 100}%; animation-delay: {- (i % 12) * 0.4}s;"
+					></span>
+				{/each}
+			</div>
+		{/if}
 		<div class="relative z-10 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-3">
 			<h2 class="text-lg font-semibold text-white">
 				{#if status === "success"}

@@ -119,7 +119,7 @@
 	}
 </script>
 
-<Card.Root class="w-full max-w-sm bg-[#E7E7E7] border-[#1C1C1C] rounded-[24px] p-8 shadow-none">
+<Card.Root class="w-full max-w-sm rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl p-8">
 	<Card.Header class="p-0 pb-1">
 		<Card.Title class="text-2xl font-semibold tracking-tight text-neutral-900">Welcome</Card.Title>
 		<Card.Description class="text-sm text-neutral-600">
@@ -128,7 +128,7 @@
 	</Card.Header>
 	<Card.Content class="p-0">
 		<Tabs.Root bind:value={mode} onValueChange={onModeChange} class="w-full">
-			<Tabs.List class="w-full grid grid-cols-2 h-10 rounded-lg bg-neutral-300/60">
+			<Tabs.List class="w-full grid grid-cols-2 h-10 rounded-lg">
 				<Tabs.Trigger value="login">Log in</Tabs.Trigger>
 				<Tabs.Trigger value="signup">Sign up</Tabs.Trigger>
 			</Tabs.List>
@@ -136,7 +136,7 @@
 				<div class="space-y-4">
 					<Button
 						type="button"
-						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
+						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-lg gap-2 transition-colors duration-150"
 						onclick={handlePasskeyLogin}
 						disabled={loading}
 					>
@@ -156,12 +156,12 @@
 							bind:value={username}
 							required
 							autocomplete="username"
-							class="bg-white border-neutral-300"
+							class="border-[var(--glass-border)]"
 						/>
 					</div>
 					<Button
 						type="submit"
-						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-md gap-2 transition-colors duration-150"
+						class="w-full bg-[#111111] hover:bg-[#222222] text-white h-11 rounded-lg gap-2 transition-colors duration-150"
 						disabled={loading}
 					>
 						<Fingerprint class="size-5" />
