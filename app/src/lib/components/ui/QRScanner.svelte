@@ -275,44 +275,6 @@
 		backdrop-filter: blur(20px);
 		background: rgba(0, 0, 0, 0.25);
 	}
-	.scanner-blur-top {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: calc(50% - 8rem);
-		z-index: 10;
-		pointer-events: none;
-	}
-	.scanner-blur-bottom {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: calc(50% - 8rem);
-		z-index: 10;
-		pointer-events: none;
-	}
-	.scanner-blur-left {
-		position: absolute;
-		top: 50%;
-		left: 0;
-		width: calc(50% - 8rem);
-		height: 16rem;
-		transform: translateY(-50%);
-		z-index: 10;
-		pointer-events: none;
-	}
-	.scanner-blur-right {
-		position: absolute;
-		top: 50%;
-		right: 0;
-		width: calc(50% - 8rem);
-		height: 16rem;
-		transform: translateY(-50%);
-		z-index: 10;
-		pointer-events: none;
-	}
 	.scan-box-border {
 		border-width: 2px;
 		border-style: solid;
@@ -531,12 +493,24 @@
 				muted
 			></video>
 
-			<!-- Blur panels (four edges; center 256×256 stays clear for mobile) -->
-			<div class="scanner-blur-top scanner-outside-blur" aria-hidden="true"></div>
-			<div class="scanner-blur-bottom scanner-outside-blur" aria-hidden="true"></div>
-			<div class="scanner-blur-left scanner-outside-blur" aria-hidden="true"></div>
-			<div class="scanner-blur-right scanner-outside-blur" aria-hidden="true"></div>
-			<!-- Center box: border only (camera feed inside box is never blurred) -->
+			<!-- Full-screen blur with rounded-rect punch-out (mask + clip-path for redundancy) -->
+			<svg width="0" height="0" aria-hidden="true" focusable="false">
+				<defs>
+					<mask id="scanner-outside-mask" maskContentUnits="objectBoundingBox">
+						<rect x="0" y="0" width="1" height="1" fill="white" />
+						<rect x="0.3" y="0.3" width="0.4" height="0.4" rx="0.06" ry="0.06" fill="black" />
+					</mask>
+					<clipPath id="scanner-punch-clip" clipPathUnits="objectBoundingBox" clip-rule="evenodd">
+						<rect x="0" y="0" width="1" height="1" />
+						<rect x="0.3" y="0.3" width="0.4" height="0.4" rx="0.06" ry="0.06" />
+					</clipPath>
+				</defs>
+			</svg>
+			<div
+				class="absolute inset-0 z-10 pointer-events-none scanner-outside-blur"
+				style="mask: url(#scanner-outside-mask); -webkit-mask: url(#scanner-outside-mask); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; clip-path: url(#scanner-punch-clip); -webkit-clip-path: url(#scanner-punch-clip);"
+			></div>
+			<!-- Center box: border only (clear window through blur) -->
 			<div
 				class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-10 pointer-events-none rounded-3xl box-border scan-box-border"
 				class:scan-box-glow={(status === "scanning" && qrInFrame) || status === "verifying"}
