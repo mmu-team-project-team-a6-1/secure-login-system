@@ -419,23 +419,21 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={trackEl}
-					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden backdrop-blur-xl border border-white/15 bg-white/10"
-					style="-webkit-backdrop-filter: blur(24px);"
+					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden liquid-glass border border-white/15 bg-white/10"
+					style="-webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);"
 				>
 					<span
 						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-white/50"
-						style="opacity: {Math.max(0, 1 - (sliderX / Math.max(getMaxTravel(), 1)) * 1.5)};
-							   transition: {isDragging ? 'none' : 'opacity 0.3s'};"
 					>
 						Slide to approve
 					</span>
-					<!-- Glass sheet fill (semi-opaque, never fully opaque) -->
+					<!-- Glass sheet fill (fixed glass look, width reflects progress) -->
 					<div
-						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/20 border border-white/15 border-r-0"
+						class="liquid-glass liquid-glass-filter absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-white/15 border border-white/10 border-r-0"
 						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 					></div>
 					<div
-						class="liquid-glass liquid-glass-filter absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white/30 border border-white/20"
+						class="liquid-glass liquid-glass-filter absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white/20 border border-white/15"
 						style="transform: translateX({sliderX}px);
 							   -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
 							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
