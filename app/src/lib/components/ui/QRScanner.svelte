@@ -452,56 +452,63 @@
 			<div
 				class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-4 px-6 flex flex-col gap-3"
 			>
-			{#if status === "approving-loading"}
-				<div class="w-full h-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center gap-2" style="-webkit-backdrop-filter: blur(24px);">
-					<Loader2 class="size-5 text-white animate-spin" />
-					<span class="text-white/70 text-sm font-medium">Approving...</span>
-				</div>
-			{:else if !approvalReady}
-				<!-- Placeholder during countdown: no slider, just greyed-out button look -->
-				<div
-					class="w-full h-14 rounded-full bg-white/10 border border-white/15 flex items-center justify-center opacity-70 pointer-events-none select-none"
-					style="-webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);"
-					aria-hidden="true"
-				>
-					<span class="text-sm font-medium text-white/50">Wait {countdown}s...</span>
-				</div>
-			{:else}
-				<!-- Actual slider (only when countdown finished) -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					bind:this={trackEl}
-					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden bg-neutral-100 border border-neutral-200"
-				>
-					<span
-						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-neutral-500"
-					>
-						Slide to approve
-					</span>
-					<!-- Fill bar (width reflects progress) -->
-					<div
-						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-indigo-500/80"
-						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
-					></div>
-					<div
-						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-[0_8px_16px_rgba(15,23,42,0.18)]"
-						style="transform: translateX({sliderX}px);
-							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
-						onpointerdown={onSliderPointerDown}
-						onpointermove={onSliderPointerMove}
-						onpointerup={onSliderPointerUp}
-						onpointercancel={onSliderPointerUp}
-						role="slider"
-						aria-valuenow={Math.round((sliderX / Math.max(getMaxTravel(), 1)) * 100)}
-						aria-valuemin={0}
-						aria-valuemax={100}
-						aria-label="Slide to approve login"
-						tabindex={0}
-					>
-						<ChevronRight class="size-5" />
+				{#if status === "approving-loading"}
+					<div class="w-full h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center gap-2">
+						<Loader2 class="size-5 text-neutral-600 animate-spin" />
+						<span class="text-neutral-700 text-sm font-medium">Approving...</span>
 					</div>
-				</div>
-			{/if}
+				{:else if !approvalReady}
+					<!-- Placeholder during countdown: no slider, just greyed-out button look -->
+					<div
+						class="w-full h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center opacity-80 pointer-events-none select-none"
+						aria-hidden="true"
+					>
+						<span class="text-sm font-medium text-neutral-500">Wait {countdown}s...</span>
+					</div>
+				{:else}
+					<!-- Actual slider (only when countdown finished) -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						bind:this={trackEl}
+						class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden bg-neutral-100 border border-neutral-200"
+					>
+						<span
+							class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-neutral-500"
+						>
+							Slide to approve
+						</span>
+						<!-- Fill bar (width reflects progress) -->
+						<div
+							class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-indigo-500/80"
+							style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
+						></div>
+						<div
+							class="absolute top-0.5 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-[0_8px_16px_rgba(15,23,42,0.18)]"
+							style="transform: translateX({sliderX}px);
+								   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
+							onpointerdown={onSliderPointerDown}
+							onpointermove={onSliderPointerMove}
+							onpointerup={onSliderPointerUp}
+							onpointercancel={onSliderPointerUp}
+							role="slider"
+							aria-valuenow={Math.round((sliderX / Math.max(getMaxTravel(), 1)) * 100)}
+							aria-valuemin={0}
+							aria-valuemax={100}
+							aria-label="Slide to approve login"
+							tabindex={0}
+						>
+							<ChevronRight class="size-5" />
+						</div>
+					</div>
+				{/if}
+
+				<button
+					onclick={denyLogin}
+					disabled={status === "approving-loading"}
+					class="w-full py-3.5 rounded-2xl border border-neutral-200 text-neutral-700 font-medium text-sm bg-white active:scale-[0.98] transition-all duration-150 disabled:opacity-40"
+				>
+					Deny
+				</button>
 			</div>
 		{/if}
 	</div>
