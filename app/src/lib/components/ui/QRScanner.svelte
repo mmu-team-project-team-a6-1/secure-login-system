@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
 	import { BarcodeDetector } from "barcode-detector";
-	import { X, AlertCircle, AlertTriangle, Loader2, Monitor, MapPin, Globe, ShieldCheck, ChevronRight } from "@lucide/svelte";
+	import { X, AlertCircle, AlertTriangle, Loader2, Monitor, MapPin, Globe, ShieldCheck, ShieldX, ChevronRight } from "@lucide/svelte";
 
 	let { onclose }: { onclose: () => void } = $props();
 
-	let status = $state<"scanning" | "verifying" | "verified" | "approving" | "approving-loading" | "success" | "error">("scanning");
+	let status = $state<
+		"scanning" | "verifying" | "verified" | "approving" | "approving-loading" | "success" | "denied-success" | "error"
+	>("scanning");
 	let errorMsg = $state("");
 	let visible = $state(false);
 	let closing = $state(false);
@@ -245,7 +247,12 @@
 		}
 		pendingSessionId = null;
 		desktopInfo = null;
-		handleClose();
+	status = "denied-success";
+	closing = false;
+	successCloseTimer = setTimeout(() => {
+		closing = true;
+		successSlideTimer = setTimeout(handleClose, 400);
+	}, 1400);
 	}
 
 	function resetAfterDelay() {
@@ -336,102 +343,112 @@
 	}
 </style>
 
-{#if status === "approving" || status === "approving-loading" || status === "success"}
-	<!-- Approval screen (full-screen, replaces camera) -->
+{#if status === "approving" || status === "approving-loading" || status === "success" || status === "denied-success"}
+	<!-- Approval / result sheet (full-screen, replaces camera) -->
 	<div
-		class="fixed inset-0 z-50 flex flex-col bg-black approval-sheet"
+		class="fixed inset-0 z-50 flex flex-col bg-neutral-50 approval-sheet"
 		class:opacity-0={!visible}
 		class:opacity-100={visible}
 		class:approval-sheet-closing={closing}
 		style="transition: opacity 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);"
 	>
-		{#if status === "success"}
-			<!-- Ambient green glow (softer, slightly expanded) -->
-			<div
-				class="absolute inset-0 z-0 opacity-80"
-				style="background: radial-gradient(ellipse 90% 80% at 50% 45%, rgba(0, 168, 142, 0.28) 0%, rgba(111, 207, 151, 0.16) 45%, transparent 72%);"
-				aria-hidden="true"
-			></div>
-		{/if}
 		<div class="relative z-10 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-3">
-			<h2 class="text-lg font-semibold text-white">
-				{#if status !== "success"}
-					Approve Login
+			<h2 class="text-lg font-semibold text-neutral-900">
+				{#if status === "success"}
+					Login authorized
+				{:else if status === "denied-success"}
+					Login attempt blocked
+				{:else}
+					Approve login
 				{/if}
 			</h2>
-			{#if status !== "success"}
+			{#if status !== "success" && status !== "denied-success"}
 				<button
 					onclick={denyLogin}
-					class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center active:scale-90 transition-transform duration-150"
-					style="-webkit-backdrop-filter: blur(24px);"
+					class="w-10 h-10 rounded-full bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.08)] flex items-center justify-center active:scale-90 transition-transform duration-150"
 					aria-label="Deny and close"
 				>
-					<X class="size-5 text-white" />
+					<X class="size-5 text-neutral-500" />
 				</button>
 			{/if}
 		</div>
 
-		<div class="flex-1 flex flex-col items-center justify-center px-8 gap-6">
+		<div class="flex-1 flex flex-col items-center justify-center px-6 gap-6">
 			{#if status === "success"}
 				<div class="flex flex-col items-center gap-4">
-					<div class="success-icon-wrap w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 shadow-[0_0_0_1px_rgba(34,197,94,0.2),0_0_24px_rgba(34,197,94,0.25)]">
-						<svg class="success-checkmark w-12 h-12 text-green-400" viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+					<div class="success-icon-wrap w-24 h-24 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 shadow-[0_10px_40px_rgba(16,185,129,0.25)] border border-emerald-100">
+						<svg class="success-checkmark w-12 h-12 text-emerald-500" viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
 							<path class="success-checkmark-path" pathLength="1" d="M14 27 l8 8 16 -20" />
 						</svg>
 					</div>
 					<div class="flex flex-col items-center gap-1 text-center">
-						<p class="text-green-400 text-xl font-semibold">Login authorized</p>
-						<p class="text-white/50 text-sm">You can close this screen</p>
+						<p class="text-emerald-700 text-xl font-semibold">Login authorized</p>
+						<p class="text-neutral-600 text-sm">You can close this screen on your phone.</p>
+					</div>
+				</div>
+			{:else if status === "denied-success"}
+				<div class="flex flex-col items-center gap-4">
+					<div class="w-20 h-20 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0 shadow-[0_10px_40px_rgba(248,113,113,0.2)] border border-rose-100">
+						<ShieldX class="size-9 text-rose-500" />
+					</div>
+					<div class="flex flex-col items-center gap-2 text-center max-w-xs">
+						<p class="text-rose-700 text-lg font-semibold">Login attempt blocked</p>
+						<p class="text-neutral-600 text-sm">
+							We stopped this login from going through. Your account is safe.
+						</p>
+						<p class="text-neutral-400 text-xs">
+							If this wasn&apos;t you, consider changing your password.
+						</p>
 					</div>
 				</div>
 			{:else}
-				<div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/15 flex items-center justify-center" style="-webkit-backdrop-filter: blur(24px);">
-					<ShieldCheck class="size-8 text-white" />
+				<div class="w-16 h-16 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+					<ShieldCheck class="size-8 text-indigo-500" />
 				</div>
 
-				<p class="text-white/70 text-sm text-center leading-relaxed">
-					A device is requesting to log in to your account. Please verify the details below.
+				<p class="text-neutral-700 text-sm text-center leading-relaxed">
+					A device is requesting to log in to your account. Please review the details below.
 				</p>
 
 				{#if desktopInfo}
-					<div class="w-full max-w-xs rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 overflow-hidden" style="-webkit-backdrop-filter: blur(24px);">
-						<div class="px-5 py-3.5 flex items-center gap-3 border-b border-white/10">
-							<Monitor class="size-4.5 text-white/60 flex-shrink-0" />
+					<div class="w-full max-w-xs rounded-2xl bg-white border border-neutral-200 shadow-[0_18px_60px_rgba(15,23,42,0.06)] overflow-hidden">
+						<div class="px-5 py-3.5 flex items-center gap-3 border-b border-neutral-100">
+							<Monitor class="size-4.5 text-neutral-400 flex-shrink-0" />
 							<div class="min-w-0">
-								<p class="text-xs text-white/40">Device</p>
-								<p class="text-sm text-white font-medium truncate">{desktopInfo.device}</p>
+								<p class="text-[11px] text-neutral-400 uppercase tracking-wide">Device</p>
+								<p class="text-sm text-neutral-900 font-medium truncate">{desktopInfo.device}</p>
 							</div>
 						</div>
-						<div class="px-5 py-3.5 flex items-center gap-3 border-b border-white/10">
-							<Globe class="size-4.5 text-white/60 flex-shrink-0" />
+						<div class="px-5 py-3.5 flex items-center gap-3 border-b border-neutral-100">
+							<Globe class="size-4.5 text-neutral-400 flex-shrink-0" />
 							<div class="min-w-0">
-								<p class="text-xs text-white/40">IP Address</p>
-								<p class="text-sm text-white font-medium truncate">{desktopInfo.ip}</p>
+								<p class="text-[11px] text-neutral-400 uppercase tracking-wide">IP address</p>
+								<p class="text-sm text-neutral-900 font-medium truncate">{desktopInfo.ip}</p>
 							</div>
 						</div>
 						{#if desktopInfo.location}
 							<div class="px-5 py-3.5 flex items-center gap-3">
-								<MapPin class="size-4.5 text-white/60 flex-shrink-0" />
+								<MapPin class="size-4.5 text-neutral-400 flex-shrink-0" />
 								<div class="min-w-0">
-									<p class="text-xs text-white/40">Location</p>
-								<p class="text-sm text-white font-medium truncate">{desktopInfo.location}</p>
+									<p class="text-[11px] text-neutral-400 uppercase tracking-wide">Location</p>
+									<p class="text-sm text-neutral-900 font-medium truncate">{desktopInfo.location}</p>
+								</div>
 							</div>
-						</div>
-					{/if}
+						{/if}
+					</div>
+				{/if}
+
+				<div class="w-full max-w-xs rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 flex gap-3">
+					<AlertTriangle class="size-5 text-amber-500 flex-shrink-0 mt-0.5" />
+					<p class="text-xs text-amber-900 leading-relaxed">
+						Only approve if you are logging in on a device directly in front of you.
+						<span class="font-semibold"> Never scan a QR code someone sent you.</span>
+					</p>
 				</div>
 			{/if}
+		</div>
 
-			<div class="w-full max-w-xs rounded-xl bg-amber-500/15 backdrop-blur-md border border-amber-500/30 px-4 py-3 flex gap-3" style="-webkit-backdrop-filter: blur(12px);">
-				<AlertTriangle class="size-5 text-amber-400 flex-shrink-0 mt-0.5" />
-				<p class="text-xs text-amber-200/90 leading-relaxed">
-					Only approve if you are logging in on a device directly in front of you.
-					<span class="font-semibold text-amber-300">Never scan a QR code someone sent you.</span>
-				</p>
-			</div>
-		{/if}
-	</div>
-
-		{#if status !== "success"}
+		{#if status === "approving" || status === "approving-loading"}
 			<div
 				class="relative z-10 pb-[max(env(safe-area-inset-bottom),2rem)] pt-4 px-6 flex flex-col gap-3"
 			>
@@ -454,20 +471,20 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					bind:this={trackEl}
-					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden bg-neutral-800 border border-neutral-600"
+					class="relative w-full h-14 rounded-full select-none touch-none overflow-hidden bg-neutral-100 border border-neutral-200"
 				>
 					<span
-						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-neutral-400"
+						class="absolute inset-0 flex items-center justify-center text-sm font-medium pointer-events-none z-0 text-neutral-500"
 					>
 						Slide to approve
 					</span>
 					<!-- Fill bar (width reflects progress) -->
 					<div
-						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-neutral-600"
+						class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-indigo-500/80"
 						style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 					></div>
 					<div
-						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-md"
+						class="absolute top-1 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-[0_8px_16px_rgba(15,23,42,0.18)]"
 						style="transform: translateX({sliderX}px);
 							   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 						onpointerdown={onSliderPointerDown}
@@ -485,15 +502,6 @@
 					</div>
 				</div>
 			{/if}
-				<button
-					onclick={denyLogin}
-					disabled={status === "approving-loading"}
-					class="w-full py-3.5 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 text-white font-medium text-sm
-						   active:scale-[0.98] transition-all duration-150 disabled:opacity-40"
-					style="-webkit-backdrop-filter: blur(24px);"
-				>
-					Deny
-				</button>
 			</div>
 		{/if}
 	</div>
