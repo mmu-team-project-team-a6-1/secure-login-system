@@ -479,11 +479,11 @@
 						</span>
 						<!-- Fill bar (width reflects progress) -->
 						<div
-							class="absolute top-1 left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-indigo-500/80"
+							class="absolute top-[0.2rem] left-1 h-12 rounded-l-full overflow-hidden pointer-events-none z-[1] bg-indigo-500/80"
 							style="width: {sliderX + THUMB_SIZE / 2}px; min-width: 0; transition: {isDragging ? 'none' : 'width 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 						></div>
 						<div
-							class="absolute top-0.5 left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-[0_8px_16px_rgba(15,23,42,0.18)]"
+							class="absolute top-[0.2rem] left-1 w-12 h-12 rounded-full flex items-center justify-center z-[2] bg-white text-neutral-900 shadow-[0_8px_16px_rgba(15,23,42,0.18)]"
 							style="transform: translateX({sliderX}px);
 								   transition: {isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1)'};"
 							onpointerdown={onSliderPointerDown}
