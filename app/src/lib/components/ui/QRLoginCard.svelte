@@ -172,10 +172,10 @@
 		initSession();
 		initSiteUrlQR();
 	});
-	onDestroy(() => {
-		stopRotation();
-		stopPolling();
-	});
+onDestroy(() => {
+	stopRotation();
+	stopPolling();
+});
 </script>
 
 <Card.Root class="w-full max-w-sm rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] liquid-glass p-8">
@@ -353,16 +353,41 @@
 					<div
 						class="relative w-full aspect-square rounded-2xl border border-neutral-300 bg-white p-2 flex items-center justify-center overflow-hidden"
 					>
-						{#each [0, 1] as slot}
-							{#if qrImages[slot]}
-								<img
-									src={qrImages[slot]}
-									alt="QR code to log in with mobile app"
-									class="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] object-contain transition-opacity duration-300 ease-out"
-									style:opacity={activeSlot === slot ? 1 : 0}
-								/>
-							{/if}
-						{/each}
+						{#if status === "loading"}
+							<span class="text-neutral-400 text-[11px]">Loading QR...</span>
+						{:else if status === "expired"}
+							<span class="text-[11px] text-neutral-400 text-center">Session expired</span>
+						{:else if status === "scanned"}
+							<div class="flex flex-col items-center gap-2">
+								<div class="relative">
+									<div class="w-9 h-9 rounded-full border-[3px] border-neutral-200 border-t-[#4F83C2] animate-spin"></div>
+								</div>
+								<div class="flex flex-col items-center gap-0.5">
+									<span class="text-[11px] text-neutral-700 font-medium">Waiting for approval</span>
+								</div>
+							</div>
+						{:else if status === "authenticated"}
+							<div class="flex flex-col items-center gap-1.5">
+								<ShieldCheck class="size-7 text-green-500" />
+								<span class="text-[11px] text-green-600 font-medium">Approved!</span>
+							</div>
+						{:else if status === "denied"}
+							<div class="flex flex-col items-center gap-1.5">
+								<ShieldX class="size-7 text-red-400" />
+								<span class="text-[11px] text-red-500 font-medium">Login denied</span>
+							</div>
+						{:else}
+							{#each [0, 1] as slot}
+								{#if qrImages[slot]}
+									<img
+										src={qrImages[slot]}
+										alt="QR code to log in with mobile app"
+										class="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] object-contain transition-opacity duration-300 ease-out"
+										style:opacity={activeSlot === slot ? 1 : 0}
+									/>
+								{/if}
+							{/each}
+						{/if}
 					</div>
 					<p class="text-[11px] text-neutral-600 text-center">
 						Use your phone’s Scan screen to scan this code.
@@ -396,16 +421,41 @@
 							<div
 								class="relative w-32 h-32 rounded-2xl border border-neutral-300 bg-white p-2 flex items-center justify-center overflow-hidden"
 							>
-								{#each [0, 1] as slot}
-									{#if qrImages[slot]}
-										<img
-											src={qrImages[slot]}
-											alt="QR code to log in with mobile app"
-											class="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] object-contain transition-opacity duration-300 ease-out"
-											style:opacity={activeSlot === slot ? 1 : 0}
-										/>
-									{/if}
-								{/each}
+								{#if status === "loading"}
+									<span class="text-neutral-400 text-[11px]">Loading QR...</span>
+								{:else if status === "expired"}
+									<span class="text-[11px] text-neutral-400 text-center">Session expired</span>
+								{:else if status === "scanned"}
+									<div class="flex flex-col items-center gap-2">
+										<div class="relative">
+											<div class="w-9 h-9 rounded-full border-[3px] border-neutral-200 border-t-[#4F83C2] animate-spin"></div>
+										</div>
+										<div class="flex flex-col items-center gap-0.5">
+											<span class="text-[11px] text-neutral-700 font-medium">Waiting for approval</span>
+										</div>
+									</div>
+								{:else if status === "authenticated"}
+									<div class="flex flex-col items-center gap-1.5">
+										<ShieldCheck class="size-7 text-green-500" />
+										<span class="text-[11px] text-green-600 font-medium">Approved!</span>
+									</div>
+								{:else if status === "denied"}
+									<div class="flex flex-col items-center gap-1.5">
+										<ShieldX class="size-7 text-red-400" />
+										<span class="text-[11px] text-red-500 font-medium">Login denied</span>
+									</div>
+								{:else}
+									{#each [0, 1] as slot}
+										{#if qrImages[slot]}
+											<img
+												src={qrImages[slot]}
+												alt="QR code to log in with mobile app"
+												class="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] object-contain transition-opacity duration-300 ease-out"
+												style:opacity={activeSlot === slot ? 1 : 0}
+											/>
+										{/if}
+									{/each}
+								{/if}
 							</div>
 							<p class="text-[11px] text-neutral-600 text-center max-w-xs">
 								Now, point your phone at this QR code to approve the login.
