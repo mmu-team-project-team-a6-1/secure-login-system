@@ -3,8 +3,9 @@
 	import QRCode from "qrcode";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
+	import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
 	import { generateToken, nowEpochSeconds } from "$lib/utils/totp";
-	import { RefreshCw, Loader2, ShieldCheck, ShieldX } from "@lucide/svelte";
+	import { RefreshCw, Loader2, ShieldCheck, ShieldX, X } from "@lucide/svelte";
 
 	let sessionId = $state<string | null>(null);
 	let secret = $state<string | null>(null);
@@ -12,6 +13,32 @@
 	let activeSlot = $state(0);
 	let status = $state<"loading" | "active" | "scanned" | "authenticated" | "expired" | "denied">("loading");
 	let error = $state<string | null>(null);
+
+	let helpOpen = $state(false);
+	let helpMode = $state<"steps" | "wizard">("steps");
+	let wizardStep = $state(0);
+
+	let siteUrl = $state<string | null>(null);
+	let siteUrlQR = $state<string | null>(null);
+
+	const wizardSteps = [
+		{
+			title: "Open this site on your phone",
+			description: "On your phone, open your browser and go to this same website."
+		},
+		{
+			title: "Sign in and open your dashboard",
+			description: "Log in on your phone and go to your account dashboard."
+		},
+		{
+			title: "Tap the Scan option",
+			description: "In your dashboard, find and tap the Scan option."
+		},
+		{
+			title: "Scan this QR code",
+			description: "Use the Scan feature on your phone to scan the QR code shown on this screen."
+		}
+	] as const;
 
 	let rotateTimer: ReturnType<typeof setInterval> | undefined;
 	let pollTimer: ReturnType<typeof setInterval> | undefined;
@@ -31,6 +58,21 @@
 		} catch {
 			error = "Failed to start QR session";
 			status = "expired";
+		}
+	}
+
+	async function initSiteUrlQR() {
+		if (typeof window === "undefined") return;
+		const url = window.location.origin;
+		siteUrl = url;
+		try {
+			siteUrlQR = await QRCode.toDataURL(url, {
+				width: 120,
+				margin: 1,
+				errorCorrectionLevel: "M"
+			});
+		} catch {
+			// non-fatal if we can't render this helper QR
 		}
 	}
 
@@ -108,7 +150,28 @@
 		pollTimer = undefined;
 	}
 
-	onMount(initSession);
+	function openHelp(mode: "steps" | "wizard" = "steps") {
+		helpMode = mode;
+		wizardStep = 0;
+		helpOpen = true;
+	}
+
+	function nextWizardStep() {
+		if (wizardStep < wizardSteps.length - 1) {
+			wizardStep += 1;
+		}
+	}
+
+	function prevWizardStep() {
+		if (wizardStep > 0) {
+			wizardStep -= 1;
+		}
+	}
+
+	onMount(() => {
+		initSession();
+		initSiteUrlQR();
+	});
 	onDestroy(() => {
 		stopRotation();
 		stopPolling();
@@ -183,5 +246,198 @@
 				{/each}
 			{/if}
 		</div>
+
+		<div class="w-full mt-1 flex flex-col items-center gap-1">
+			<p class="text-[11px] text-neutral-500 text-center">
+				To use this QR code, open this site on your phone and use the Scan option in your dashboard.
+			</p>
+			<button
+				type="button"
+				class="text-xs font-medium text-[#4F83C2] hover:text-[#3a66a0] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4F83C2] focus-visible:ring-offset-transparent rounded-full px-1 py-0.5"
+				onclick={() => openHelp("steps")}
+			>
+				Need help scanning this?
+			</button>
+		</div>
 	</Card.Content>
 </Card.Root>
+
+<AlertDialog.Root bind:open={helpOpen}>
+	<AlertDialog.Content aria-label="How to scan this QR code">
+		<div class="relative">
+			<AlertDialog.Header>
+				<AlertDialog.Title>How to scan this QR code</AlertDialog.Title>
+				<AlertDialog.Description>
+					Use your account dashboard on your phone to scan this QR code — not your camera app.
+				</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Cancel
+				class="absolute right-0 top-0 -mt-1 -mr-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400"
+				aria-label="Close help"
+			>
+				<X class="h-3.5 w-3.5" />
+			</AlertDialog.Cancel>
+		</div>
+
+		{#if siteUrlQR && siteUrl}
+			<div class="mt-2 mb-4 flex flex-col items-center gap-2 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+				<p class="text-[11px] font-medium text-neutral-700 text-center">
+					First, open this website on your phone:
+				</p>
+				<div class="flex items-center gap-3">
+					<img
+						src={siteUrlQR}
+						alt="QR code to open this website on your phone"
+						class="h-16 w-16 rounded-lg border border-neutral-200 bg-white p-1"
+					/>
+					<p class="max-w-[12rem] break-all text-[11px] font-mono text-neutral-600">
+						{siteUrl}
+					</p>
+				</div>
+			</div>
+		{/if}
+
+		<div class="mt-2 mb-4 flex items-center gap-1 rounded-full bg-neutral-100 p-1 text-xs font-medium text-neutral-600">
+			<button
+				type="button"
+				class="flex-1 rounded-full px-3 py-1 text-center transition-colors"
+				class:bg-white={helpMode === "steps"}
+				class:shadow-sm={helpMode === "steps"}
+				onclick={() => (helpMode = "steps")}
+				aria-pressed={helpMode === "steps"}
+			>
+				Quick steps
+			</button>
+			<button
+				type="button"
+				class="flex-1 rounded-full px-3 py-1 text-center transition-colors"
+				class:bg-white={helpMode === "wizard"}
+				class:shadow-sm={helpMode === "wizard"}
+				onclick={() => (helpMode = "wizard")}
+				aria-pressed={helpMode === "wizard"}
+			>
+				Guided wizard
+			</button>
+		</div>
+
+		{#if helpMode === "steps"}
+			<div class="mt-1 flex gap-4">
+				<div class="flex-1 space-y-2.5">
+					{#each wizardSteps as step, index}
+						<div class="flex gap-3">
+							<div class="flex flex-col items-center">
+								<div class="flex h-7 w-7 items-center justify-center rounded-full bg-[#4F83C2]/10 border border-[#4F83C2]/40 text-[11px] font-semibold text-[#4F83C2]">
+									{index + 1}
+								</div>
+								{#if index < wizardSteps.length - 1}
+									<div class="mt-0.5 h-6 w-px bg-neutral-200"></div>
+								{/if}
+							</div>
+							<div class="flex-1">
+								<p class="text-xs font-semibold text-neutral-800">
+									{step.title}
+								</p>
+								<p class="mt-0.5 text-[11px] text-neutral-500">
+									{step.description}
+								</p>
+							</div>
+						</div>
+					{/each}
+
+					<p class="pt-2.5 text-[11px] text-neutral-500">
+						Keep this page open on your computer while you scan from your phone.
+					</p>
+				</div>
+
+				<div class="w-[8.5rem] flex flex-col items-center gap-1.5">
+					<div
+						class="relative w-full aspect-square rounded-2xl border border-neutral-300 bg-white p-2 flex items-center justify-center overflow-hidden"
+					>
+						{#each [0, 1] as slot}
+							{#if qrImages[slot]}
+								<img
+									src={qrImages[slot]}
+									alt="QR code to log in with mobile app"
+									class="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] object-contain transition-opacity duration-300 ease-out"
+									style:opacity={activeSlot === slot ? 1 : 0}
+								/>
+							{/if}
+						{/each}
+					</div>
+					<p class="text-[11px] text-neutral-600 text-center">
+						Use your phone’s Scan screen to scan this code.
+					</p>
+				</div>
+			</div>
+		{:else}
+			<div class="space-y-4">
+				<div class="flex items-center justify-center gap-1">
+					{#each wizardSteps as _, index}
+						<div
+							class="h-1.5 w-6 rounded-full bg-neutral-200 transition-colors"
+							class:bg-[#4F83C2]={(index) === wizardStep}
+						></div>
+					{/each}
+				</div>
+
+				<div class="space-y-2">
+					<p class="text-xs font-semibold text-neutral-800">
+						Step {wizardStep + 1} of {wizardSteps.length}
+					</p>
+					<p class="mt-1 text-sm font-medium text-neutral-900">
+						{wizardSteps[wizardStep].title}
+					</p>
+					<p class="mt-1 text-[13px] text-neutral-600">
+						{wizardSteps[wizardStep].description}
+					</p>
+
+					{#if wizardStep === wizardSteps.length - 1}
+						<div class="mt-2 flex flex-col items-center gap-1.5">
+							<div
+								class="relative w-32 h-32 rounded-2xl border border-neutral-300 bg-white p-2 flex items-center justify-center overflow-hidden"
+							>
+								{#each [0, 1] as slot}
+									{#if qrImages[slot]}
+										<img
+											src={qrImages[slot]}
+											alt="QR code to log in with mobile app"
+											class="absolute inset-2 w-[calc(100%-1rem)] h-[calc(100%-1rem)] object-contain transition-opacity duration-300 ease-out"
+											style:opacity={activeSlot === slot ? 1 : 0}
+										/>
+									{/if}
+								{/each}
+							</div>
+							<p class="text-[11px] text-neutral-600 text-center max-w-xs">
+								Now, point your phone at this QR code to approve the login.
+							</p>
+						</div>
+					{/if}
+				</div>
+
+				<div class="flex justify-between items-center pt-2">
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onclick={prevWizardStep}
+						disabled={wizardStep === 0}
+						class="text-xs"
+					>
+						Back
+					</Button>
+					{#if wizardStep < wizardSteps.length - 1}
+						<Button
+							type="button"
+							variant="default"
+							size="sm"
+							onclick={nextWizardStep}
+							class="text-xs"
+						>
+							Next step
+						</Button>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	</AlertDialog.Content>
+</AlertDialog.Root>
